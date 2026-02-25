@@ -2,11 +2,13 @@ import { describe, it, expect } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { PermissionsProvider } from '../contexts/PermissionsContext';
+import type { PermissionToken } from '../types/permissions';
 import { ProgramNavLinks } from './ProgramNavLinks';
 
 function renderWithPermissions(ui: ReactNode, permissions: string[]) {
+  const token: PermissionToken = { permissions, generalPermissions: [], csrfToken: '' };
   return render(
-    <PermissionsProvider permissions={permissions}>{ui}</PermissionsProvider>,
+    <PermissionsProvider token={token}>{ui}</PermissionsProvider>,
   );
 }
 

@@ -35,6 +35,12 @@ export interface Permission {
   roleCode: RoleCode;
 }
 
+export interface PermissionToken {
+  permissions: string[];         // "entityTypeCode:entityId:roleCode"
+  generalPermissions: string[];  // uppercase role names e.g. "ADMIN", "MEMBER"
+  csrfToken: string;
+}
+
 /**
  * Parses a raw "entityType:entityId:role" string from the provider service.
  * Example: "2:10:1" → { entityTypeCode: '2', entityId: 10, roleCode: '1' }
@@ -51,4 +57,11 @@ export function parsePermissionString(raw: string): Permission {
     entityId: parseInt(entityIdStr),
     roleCode: roleCode as RoleCode,
   };
+}
+
+/** Parses an uppercase role name (e.g. "ADMIN") into its RoleCode. */
+export function parseGeneralPermission(raw: string): RoleCode {
+  const entry = ROLE_MAP[raw as keyof typeof ROLE_MAP];
+  if (!entry) throw new Error(`Unknown general permission: "${raw}"`);
+  return entry.code;
 }

@@ -25,7 +25,7 @@ describe('usePermissions', () => {
 
   it('returns context value when inside PermissionsProvider', () => {
     render(
-      <PermissionsProvider permissions={['2:10:1']}>
+      <PermissionsProvider token={{ permissions: ['2:10:1'], generalPermissions: [], csrfToken: '' }}>
         <DisplayConsumer />
       </PermissionsProvider>,
     );

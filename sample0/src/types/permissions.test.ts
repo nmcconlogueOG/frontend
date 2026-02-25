@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { parsePermissionString } from './permissions';
+import { parseGeneralPermission, parsePermissionString } from './permissions';
 
 describe('parsePermissionString', () => {
   it('parses a valid permission string into typed fields', () => {
@@ -25,5 +25,15 @@ describe('parsePermissionString', () => {
 
   it('throws for an empty string', () => {
     expect(() => parsePermissionString('')).toThrow();
+  });
+});
+
+describe('parseGeneralPermission', () => {
+  it('parses a valid role name into its code', () => {
+    expect(parseGeneralPermission('ADMIN')).toBe('1');
+  });
+
+  it('throws for an unknown role name', () => {
+    expect(() => parseGeneralPermission('SUPERUSER')).toThrow('Unknown general permission: "SUPERUSER"');
   });
 });

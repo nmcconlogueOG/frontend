@@ -7,9 +7,11 @@ import {
   type ReactNode,
 } from 'react';
 import {
+  parseGeneralPermission,
   parsePermissionString,
   type EntityTypeCode,
   type Permission,
+  type PermissionToken,
   type RoleCode,
 } from '../types/permissions';
 
@@ -35,11 +37,17 @@ export interface PermissionsContextValue {
    */
   getRoles: (entityTypeCode: EntityTypeCode, entityId: number) => RoleCode[];
   /**
-   * Replace all permissions by parsing a fresh array of raw strings
-   * (e.g. the array received from the provider service).
-   * @param rawPermissions - Raw permission strings in the form "entityType:entityId:role"
+   * True if the user holds the given general (entity-less) role.
+   * @param roleCode - The role code to check (e.g. ROLE_MAP.ADMIN.code)
    */
-  loadPermissions: (rawPermissions: string[]) => void;
+  hasGeneralPermission: (roleCode: RoleCode) => boolean;
+  /** The CSRF token from the last loaded PermissionToken. */
+  csrfToken: string;
+  /**
+   * Replace all state atomically by loading a fresh PermissionToken
+   * (e.g. the object received from the backend).
+   */
+  loadToken: (token: PermissionToken) => void;
 }
 
 // eslint-disable-next-line react-refresh/only-export-components
@@ -48,29 +56,45 @@ export const PermissionsContext = createContext<PermissionsContextValue | null>(
 interface PermissionsProviderProps {
   children: ReactNode;
   /**
-   * Raw permission strings from the provider service, each in the form
-   * "entityType:entityId:role"  (e.g. ["2:10:22", "1:5:1"]).
-   * Re-passing a new array replaces the current permissions.
+   * Structured token from the backend containing entity-scoped permissions,
+   * general role permissions, and a CSRF token.
+   * Re-passing a new token replaces all current state.
    */
-  permissions?: string[];
+  token?: PermissionToken;
+}
+
+const DEFAULT_TOKEN: PermissionToken = { permissions: [], generalPermissions: [], csrfToken: '' };
+
+interface ParsedToken {
+  permissions: Permission[];
+  generalPermissions: RoleCode[];
+  csrfToken: string;
+}
+
+function parseToken(token: PermissionToken): ParsedToken {
+  return {
+    permissions: token.permissions.map(parsePermissionString),
+    generalPermissions: token.generalPermissions.map(parseGeneralPermission),
+    csrfToken: token.csrfToken,
+  };
 }
 
 export function PermissionsProvider({
   children,
-  permissions: rawPermissions = [],
+  token = DEFAULT_TOKEN,
 }: PermissionsProviderProps) {
-  const [permissions, setPermissions] = useState<Permission[]>(() =>
-    rawPermissions.map(parsePermissionString),
-  );
+  const [state, setState] = useState<ParsedToken>(() => parseToken(token));
 
-  // Keep state in sync whenever the caller updates the raw array reference
+  // Keep state in sync whenever the caller updates the token reference
   useEffect(() => {
-    setPermissions(rawPermissions.map(parsePermissionString));
-  }, [rawPermissions]);
+    setState(parseToken(token));
+  }, [token]);
 
-  const loadPermissions = useCallback((raw: string[]) => {
-    setPermissions(raw.map(parsePermissionString));
+  const loadToken = useCallback((t: PermissionToken) => {
+    setState(parseToken(t));
   }, []);
+
+  const { permissions, generalPermissions, csrfToken } = state;
 
   const hasPermission = useCallback(
     (entityTypeCode: EntityTypeCode, entityId: number, roleCode: RoleCode) =>
@@ -99,9 +123,14 @@ export function PermissionsProvider({
     [permissions],
   );
 
+  const hasGeneralPermission = useCallback(
+    (roleCode: RoleCode) => generalPermissions.includes(roleCode),
+    [generalPermissions],
+  );
+
   const value = useMemo<PermissionsContextValue>(
-    () => ({ permissions, hasPermission, hasAnyRole, getRoles, loadPermissions }),
-    [permissions, hasPermission, hasAnyRole, getRoles, loadPermissions],
+    () => ({ permissions, hasPermission, hasAnyRole, getRoles, hasGeneralPermission, csrfToken, loadToken }),
+    [permissions, hasPermission, hasAnyRole, getRoles, hasGeneralPermission, csrfToken, loadToken],
   );
 
   return (
