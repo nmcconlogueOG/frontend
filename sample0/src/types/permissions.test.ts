@@ -29,11 +29,13 @@ describe('parsePermissionString', () => {
 });
 
 describe('parseGeneralPermission', () => {
-  it('parses a valid role name into its code', () => {
-    expect(parseGeneralPermission('ADMIN')).toBe('1');
+  it('returns the value for a known general permission', () => {
+    expect(parseGeneralPermission('VIEW')).toBe('VIEW');
+    expect(parseGeneralPermission('EDIT')).toBe('EDIT');
+    expect(parseGeneralPermission('MANAGE')).toBe('MANAGE');
   });
 
-  it('throws for an unknown role name', () => {
-    expect(() => parseGeneralPermission('SUPERUSER')).toThrow('Unknown general permission: "SUPERUSER"');
+  it('throws for an unknown general permission', () => {
+    expect(() => parseGeneralPermission('ADMIN')).toThrow('Unknown general permission: "ADMIN"');
   });
 });

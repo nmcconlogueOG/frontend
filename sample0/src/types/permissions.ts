@@ -35,9 +35,16 @@ export interface Permission {
   roleCode: RoleCode;
 }
 
+/**
+ * General (entity-less) permissions granted to the user.
+ * Update values to match your backend's permission strings.
+ */
+export const GENERAL_PERMISSIONS = ['VIEW', 'EDIT', 'MANAGE'] as const;
+export type GeneralPermission = typeof GENERAL_PERMISSIONS[number];
+
 export interface PermissionToken {
-  permissions: string[];         // "entityTypeCode:entityId:roleCode"
-  generalPermissions: string[];  // uppercase role names e.g. "ADMIN", "MEMBER"
+  permissions: string[];            // "entityTypeCode:entityId:roleCode"
+  generalPermissions: string[];     // e.g. "VIEW", "EDIT", "MANAGE"
   csrfToken: string;
 }
 
@@ -59,9 +66,10 @@ export function parsePermissionString(raw: string): Permission {
   };
 }
 
-/** Parses an uppercase role name (e.g. "ADMIN") into its RoleCode. */
-export function parseGeneralPermission(raw: string): RoleCode {
-  const entry = ROLE_MAP[raw as keyof typeof ROLE_MAP];
-  if (!entry) throw new Error(`Unknown general permission: "${raw}"`);
-  return entry.code;
+/** Validates and returns a general permission string (e.g. "VIEW", "EDIT"). */
+export function parseGeneralPermission(raw: string): GeneralPermission {
+  if (!(GENERAL_PERMISSIONS as readonly string[]).includes(raw)) {
+    throw new Error(`Unknown general permission: "${raw}"`);
+  }
+  return raw as GeneralPermission;
 }

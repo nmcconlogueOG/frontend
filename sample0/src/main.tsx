@@ -12,7 +12,7 @@ const token: PermissionToken = {
     '2:2:2', // PROGRAM 2 — MEMBER
     '2:3:3', // PROGRAM 3 — VIEWER (excluded from nav)
   ],
-  generalPermissions: ['MEMBER'],
+  generalPermissions: ['EDIT'],
   csrfToken: 'demo-csrf-token',
 }
 

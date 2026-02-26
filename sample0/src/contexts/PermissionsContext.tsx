@@ -10,6 +10,7 @@ import {
   parseGeneralPermission,
   parsePermissionString,
   type EntityTypeCode,
+  type GeneralPermission,
   type Permission,
   type PermissionToken,
   type RoleCode,
@@ -37,10 +38,10 @@ export interface PermissionsContextValue {
    */
   getRoles: (entityTypeCode: EntityTypeCode, entityId: number) => RoleCode[];
   /**
-   * True if the user holds the given general (entity-less) role.
-   * @param roleCode - The role code to check (e.g. ROLE_MAP.ADMIN.code)
+   * True if the user has the given general (entity-less) permission.
+   * @param permission - The permission to check (e.g. "VIEW", "EDIT", "MANAGE")
    */
-  hasGeneralPermission: (roleCode: RoleCode) => boolean;
+  hasGeneralPermission: (permission: GeneralPermission) => boolean;
   /** The CSRF token from the last loaded PermissionToken. */
   csrfToken: string;
   /**
@@ -67,7 +68,7 @@ const DEFAULT_TOKEN: PermissionToken = { permissions: [], generalPermissions: []
 
 interface ParsedToken {
   permissions: Permission[];
-  generalPermissions: RoleCode[];
+  generalPermissions: GeneralPermission[];
   csrfToken: string;
 }
 
@@ -124,7 +125,7 @@ export function PermissionsProvider({
   );
 
   const hasGeneralPermission = useCallback(
-    (roleCode: RoleCode) => generalPermissions.includes(roleCode),
+    (permission: GeneralPermission) => generalPermissions.includes(permission),
     [generalPermissions],
   );
 
