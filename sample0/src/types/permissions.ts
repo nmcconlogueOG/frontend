@@ -36,11 +36,16 @@ export interface Permission {
 }
 
 /**
- * General (entity-less) permissions granted to the user.
- * Update values to match your backend's permission strings.
+ * Maps general (entity-less) permission codes to their display labels.
+ * Update keys/values to match your backend's permission strings.
  */
-export const GENERAL_PERMISSIONS = ['VIEW', 'EDIT', 'MANAGE'] as const;
-export type GeneralPermission = typeof GENERAL_PERMISSIONS[number];
+export const GENERAL_PERMISSION_MAP = {
+  VIEW:   'View',
+  EDIT:   'Edit',
+  MANAGE: 'Manage',
+} as const;
+
+export type GeneralPermission = keyof typeof GENERAL_PERMISSION_MAP;
 
 export interface PermissionToken {
   permissions: string[];            // "entityTypeCode:entityId:roleCode"
@@ -68,7 +73,7 @@ export function parsePermissionString(raw: string): Permission {
 
 /** Validates and returns a general permission string (e.g. "VIEW", "EDIT"). */
 export function parseGeneralPermission(raw: string): GeneralPermission {
-  if (!(GENERAL_PERMISSIONS as readonly string[]).includes(raw)) {
+  if (!(raw in GENERAL_PERMISSION_MAP)) {
     throw new Error(`Unknown general permission: "${raw}"`);
   }
   return raw as GeneralPermission;
