@@ -1,11 +1,13 @@
 import {
   createContext,
   useCallback,
+  useContext,
   useEffect,
   useMemo,
   useState,
   type ReactNode,
 } from 'react';
+import { AuthContext } from './AuthContext';
 import {
   parseGeneralPermission,
   parsePermissionString,
@@ -42,27 +44,12 @@ export interface PermissionsContextValue {
    * @param permission - The permission to check (e.g. "VIEW", "EDIT", "MANAGE")
    */
   hasGeneralPermission: (permission: GeneralPermission) => boolean;
-  /** The CSRF token from the last loaded PermissionToken. */
+  /** The CSRF token from the current PermissionToken. */
   csrfToken: string;
-  /**
-   * Replace all state atomically by loading a fresh PermissionToken
-   * (e.g. the object received from the backend).
-   */
-  loadToken: (token: PermissionToken) => void;
 }
 
 // eslint-disable-next-line react-refresh/only-export-components
 export const PermissionsContext = createContext<PermissionsContextValue | null>(null);
-
-interface PermissionsProviderProps {
-  children: ReactNode;
-  /**
-   * Structured token from the backend containing entity-scoped permissions,
-   * general role permissions, and a CSRF token.
-   * Re-passing a new token replaces all current state.
-   */
-  token?: PermissionToken;
-}
 
 const DEFAULT_TOKEN: PermissionToken = { permissions: [], generalPermissions: [], csrfToken: '' };
 
@@ -80,20 +67,15 @@ function parseToken(token: PermissionToken): ParsedToken {
   };
 }
 
-export function PermissionsProvider({
-  children,
-  token = DEFAULT_TOKEN,
-}: PermissionsProviderProps) {
+export function PermissionsProvider({ children }: { children: ReactNode }) {
+  const auth = useContext(AuthContext);
+  const token = auth?.token ?? DEFAULT_TOKEN;
+
   const [state, setState] = useState<ParsedToken>(() => parseToken(token));
 
-  // Keep state in sync whenever the caller updates the token reference
   useEffect(() => {
     setState(parseToken(token));
   }, [token]);
-
-  const loadToken = useCallback((t: PermissionToken) => {
-    setState(parseToken(t));
-  }, []);
 
   const { permissions, generalPermissions, csrfToken } = state;
 
@@ -130,8 +112,8 @@ export function PermissionsProvider({
   );
 
   const value = useMemo<PermissionsContextValue>(
-    () => ({ permissions, hasPermission, hasAnyRole, getRoles, hasGeneralPermission, csrfToken, loadToken }),
-    [permissions, hasPermission, hasAnyRole, getRoles, hasGeneralPermission, csrfToken, loadToken],
+    () => ({ permissions, hasPermission, hasAnyRole, getRoles, hasGeneralPermission, csrfToken }),
+    [permissions, hasPermission, hasAnyRole, getRoles, hasGeneralPermission, csrfToken],
   );
 
   return (
