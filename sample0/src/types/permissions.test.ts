@@ -4,13 +4,16 @@ import { parseGeneralPermission, parsePermissionString } from './permissions';
 describe('parsePermissionString', () => {
   it('parses a valid permission string into typed fields', () => {
     const result = parsePermissionString('2:10:1');
-    expect(result).toEqual({ entityTypeCode: '2', entityId: 10, roleCode: '1' });
+    expect(result).toEqual({ entityTypeCode: '2', entityId: { orgId: 0, progId: 10, subOrgId: 0 }, roleCode: '1' });
   });
 
-  it('parses entityId as a number', () => {
+  it('sets orgId for organization entity type', () => {
     const result = parsePermissionString('1:42:3');
-    expect(typeof result.entityId).toBe('number');
-    expect(result.entityId).toBe(42);
+    expect(result.entityId).toEqual({ orgId: 42, progId: 0, subOrgId: 0 });
+  });
+
+  it('throws for an unknown entity type code', () => {
+    expect(() => parsePermissionString('9:10:1')).toThrow('Unknown entity type code: "9"');
   });
 
   it('throws for a string with too few parts', () => {

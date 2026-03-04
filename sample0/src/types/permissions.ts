@@ -25,12 +25,19 @@ export const ROLE_MAP = {
 export type EntityTypeCode = (typeof ENTITY_TYPE_MAP)[keyof typeof ENTITY_TYPE_MAP]['code'];
 export type RoleCode       = (typeof ROLE_MAP)[keyof typeof ROLE_MAP]['code'];
 
+/** A predicate that tests a single Permission entry. */
+export type PermissionPredicate = (permission: Permission) => boolean;
+
 /** A single parsed permission entry. */
 export interface Permission {
   /** Code identifying the type of entity (e.g. '1' for Organization, '2' for Program). */
   entityTypeCode: EntityTypeCode;
   /** Numeric ID of the specific entity instance. */
-  entityId: number;
+  entityId: {
+    orgId: number,
+    progId: number,
+    subOrgId: number
+  }
   /** Code identifying the role the user holds on this entity. */
   roleCode: RoleCode;
 }
@@ -55,8 +62,8 @@ export interface PermissionToken {
 
 /**
  * Parses a raw "entityType:entityId:role" string from the provider service.
- * Example: "2:10:1" → { entityTypeCode: '2', entityId: 10, roleCode: '1' }
- * @throws {Error} If the string does not contain exactly three colon-separated parts.
+ * Example: "2:10:1" → { entityTypeCode: '2', entityId: { orgId: 0, progId: 10, subOrgId: 0 }, roleCode: '1' }
+ * @throws {Error} If the string does not contain exactly three colon-separated parts, or the entity type is unknown.
  */
 export function parsePermissionString(raw: string): Permission {
   const parts = raw.split(':');
@@ -64,12 +71,42 @@ export function parsePermissionString(raw: string): Permission {
     throw new Error(`Invalid permission string: "${raw}"`);
   }
   const [entityTypeCode, entityIdStr, roleCode] = parts;
+  const id = parseInt(entityIdStr, 10);
+
+  let entityId: Permission['entityId'];
+  switch (entityTypeCode as EntityTypeCode) {
+    case ENTITY_TYPE_MAP.ORGANIZATION.code:
+      entityId = { orgId: id, progId: 0, subOrgId: 0 };
+      break;
+    case ENTITY_TYPE_MAP.PROGRAM.code:
+      entityId = { orgId: 0, progId: id, subOrgId: 0 };
+      break;
+    default:
+      throw new Error(`Unknown entity type code: "${entityTypeCode}"`);
+  }
+
   return {
     entityTypeCode: entityTypeCode as EntityTypeCode,
-    entityId: parseInt(entityIdStr),
+    entityId,
     roleCode: roleCode as RoleCode,
   };
 }
+
+/** Combines predicates so all must match. */
+export const and = (...predicates: PermissionPredicate[]): PermissionPredicate =>
+  (p) => predicates.every((fn) => fn(p));
+
+/** Combines predicates so at least one must match. */
+export const or = (...predicates: PermissionPredicate[]): PermissionPredicate =>
+  (p) => predicates.some((fn) => fn(p));
+
+/** Inverts a predicate. */
+export const not = (predicate: PermissionPredicate): PermissionPredicate =>
+  (p) => !predicate(p);
+
+/** Example predicate: matches any permission where the user is an Admin on a Program. */
+export const isAdminOnProgram: PermissionPredicate = (p) =>
+  p.entityTypeCode === ENTITY_TYPE_MAP.PROGRAM.code && p.roleCode === ROLE_MAP.ADMIN.code;
 
 /** Validates and returns a general permission string (e.g. "VIEW", "EDIT"). */
 export function parseGeneralPermission(raw: string): GeneralPermission {

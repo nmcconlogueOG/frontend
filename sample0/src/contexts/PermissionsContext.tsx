@@ -9,6 +9,7 @@ import {
 } from 'react';
 import { AuthContext } from './AuthContext';
 import {
+  ENTITY_TYPE_MAP,
   parseGeneralPermission,
   parsePermissionString,
   type EntityTypeCode,
@@ -17,6 +18,16 @@ import {
   type PermissionToken,
   type RoleCode,
 } from '../types/permissions';
+
+/** Extracts the numeric ID from a Permission's entityId object based on its entityTypeCode. */
+function getEntityId(entityTypeCode: EntityTypeCode, entityId: Permission['entityId']): number {
+  switch (entityTypeCode) {
+    case ENTITY_TYPE_MAP.ORGANIZATION.code:
+      return entityId.orgId;
+    case ENTITY_TYPE_MAP.PROGRAM.code:
+      return entityId.progId;
+  }
+}
 
 export interface PermissionsContextValue {
   permissions: Permission[];
@@ -39,6 +50,11 @@ export interface PermissionsContextValue {
    * @param entityId - The numeric ID of the entity instance
    */
   getRoles: (entityTypeCode: EntityTypeCode, entityId: number) => RoleCode[];
+  /**
+   * Returns all permissions matching the given predicate.
+   * @param predicate - A function that tests each Permission; matching entries are returned.
+   */
+  filterPermissions: (predicate: (permission: Permission) => boolean) => Permission[];
   /**
    * True if the user has the given general (entity-less) permission.
    * @param permission - The permission to check (e.g. "VIEW", "EDIT", "MANAGE")
@@ -84,7 +100,7 @@ export function PermissionsProvider({ children }: { children: ReactNode }) {
       permissions.some(
         (p) =>
           p.entityTypeCode === entityTypeCode &&
-          p.entityId === entityId &&
+          getEntityId(p.entityTypeCode, p.entityId) === entityId &&
           p.roleCode === roleCode,
       ),
     [permissions],
@@ -93,7 +109,7 @@ export function PermissionsProvider({ children }: { children: ReactNode }) {
   const hasAnyRole = useCallback(
     (entityTypeCode: EntityTypeCode, entityId: number) =>
       permissions.some(
-        (p) => p.entityTypeCode === entityTypeCode && p.entityId === entityId,
+        (p) => p.entityTypeCode === entityTypeCode && getEntityId(p.entityTypeCode, p.entityId) === entityId,
       ),
     [permissions],
   );
@@ -101,8 +117,13 @@ export function PermissionsProvider({ children }: { children: ReactNode }) {
   const getRoles = useCallback(
     (entityTypeCode: EntityTypeCode, entityId: number): RoleCode[] =>
       permissions
-        .filter((p) => p.entityTypeCode === entityTypeCode && p.entityId === entityId)
+        .filter((p) => p.entityTypeCode === entityTypeCode && getEntityId(p.entityTypeCode, p.entityId) === entityId)
         .map((p) => p.roleCode),
+    [permissions],
+  );
+
+  const filterPermissions = useCallback(
+    (predicate: (permission: Permission) => boolean) => permissions.filter(predicate),
     [permissions],
   );
 
@@ -112,8 +133,8 @@ export function PermissionsProvider({ children }: { children: ReactNode }) {
   );
 
   const value = useMemo<PermissionsContextValue>(
-    () => ({ permissions, hasPermission, hasAnyRole, getRoles, hasGeneralPermission, csrfToken }),
-    [permissions, hasPermission, hasAnyRole, getRoles, hasGeneralPermission, csrfToken],
+    () => ({ permissions, hasPermission, hasAnyRole, getRoles, filterPermissions, hasGeneralPermission, csrfToken }),
+    [permissions, hasPermission, hasAnyRole, getRoles, filterPermissions, hasGeneralPermission, csrfToken],
   );
 
   return (

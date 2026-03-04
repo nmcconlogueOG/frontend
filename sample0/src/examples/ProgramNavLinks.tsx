@@ -1,37 +1,59 @@
 import { usePermissions } from '../hooks/usePermissions';
-import { ENTITY_TYPE_MAP, ROLE_MAP } from '../types/permissions';
+import {
+  and,
+  isAdminOnProgram,
+  not,
+  or,
+  ENTITY_TYPE_MAP,
+  ROLE_MAP,
+  type PermissionPredicate,
+} from '../types/permissions';
 
 interface Program {
   id: number;
   name: string;
 }
 
-/**
- * Renders navigation links for programs the user can access.
- * Only ADMIN and MEMBER roles grant access — VIEWER is excluded.
- * An additional "Manage" link is shown for programs where the user is ADMIN.
- */
-export function ProgramNavLinks({ programs }: { programs: Program[] }) {
-  const { hasPermission } = usePermissions();
-  const PROGRAM = ENTITY_TYPE_MAP.PROGRAM.code;
+// Predicate factory — narrows any predicate to a specific program ID.
+const forProgram = (id: number): PermissionPredicate => (p) => p.entityId.progId === id;
 
-  // Only ADMIN and MEMBER can see the program — VIEWER is excluded
-  const accessible = programs.filter(
-    (p) =>
-      hasPermission(PROGRAM, p.id, ROLE_MAP.ADMIN.code) ||
-      hasPermission(PROGRAM, p.id, ROLE_MAP.MEMBER.code),
+// Matches any Program permission where the role is Member.
+const isMemberOnProgram: PermissionPredicate = (p) =>
+  p.entityTypeCode === ENTITY_TYPE_MAP.PROGRAM.code && p.roleCode === ROLE_MAP.MEMBER.code;
+
+export function ProgramNavLinks({ programs }: { programs: Program[] }) {
+  const { filterPermissions } = usePermissions();
+
+  // or: accessible if the user holds ADMIN or MEMBER on the program
+  const accessibleIds = new Set(
+    filterPermissions(or(isAdminOnProgram, isMemberOnProgram)).map((p) => p.entityId.progId),
+  );
+
+  // and: composes a role predicate with a program-scoped predicate to check manage eligibility
+  const adminIds = new Set(
+    programs
+      .filter((prog) => filterPermissions(and(isAdminOnProgram, forProgram(prog.id))).length > 0)
+      .map((prog) => prog.id),
+  );
+
+  // and + not: member access only — accessible but not an admin
+  const memberOnlyIds = new Set(
+    filterPermissions(and(isMemberOnProgram, not(isAdminOnProgram))).map((p) => p.entityId.progId),
   );
 
   return (
     <nav>
-      {accessible.map((p) => (
-        <div key={p.id}>
-          <a href={`/programs/${p.id}`}>{p.name}</a>
-          {hasPermission(PROGRAM, p.id, ROLE_MAP.ADMIN.code) && (
-            <a href={`/programs/${p.id}/manage`}>Manage</a>
-          )}
-        </div>
-      ))}
+      {programs
+        .filter((prog) => accessibleIds.has(prog.id))
+        .map((prog) => (
+          <div key={prog.id}>
+            <a href={`/programs/${prog.id}`}>{prog.name}</a>
+            {adminIds.has(prog.id) && (
+              <a href={`/programs/${prog.id}/manage`}>Manage</a>
+            )}
+            {memberOnlyIds.has(prog.id) && <span>(member)</span>}
+          </div>
+        ))}
     </nav>
   );
 }
