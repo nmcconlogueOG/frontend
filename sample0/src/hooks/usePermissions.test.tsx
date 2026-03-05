@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { act, render, screen } from '@testing-library/react';
 import { AuthProvider } from '../contexts/AuthContext';
-import { PermissionsProvider } from '../contexts/PermissionsContext';
+import { PermissionsProvider } from '../contexts/PermissionsProvider';
 import { usePermissions } from './usePermissions';
 import { ENTITY_TYPE_MAP, ROLE_MAP, type PermissionToken } from '../types/permissions';
 

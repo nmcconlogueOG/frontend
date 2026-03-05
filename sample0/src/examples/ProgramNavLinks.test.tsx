@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { act, render, screen } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { AuthProvider } from '../contexts/AuthContext';
-import { PermissionsProvider } from '../contexts/PermissionsContext';
+import { PermissionsProvider } from '../contexts/PermissionsProvider';
 import type { PermissionToken } from '../types/permissions';
 import { ProgramNavLinks } from './ProgramNavLinks';
 
