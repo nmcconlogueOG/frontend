@@ -25,19 +25,18 @@ export const ROLE_MAP = {
 export type EntityTypeCode = (typeof ENTITY_TYPE_MAP)[keyof typeof ENTITY_TYPE_MAP]['code'];
 export type RoleCode       = (typeof ROLE_MAP)[keyof typeof ROLE_MAP]['code'];
 
-/** A predicate that tests a single Permission entry. */
-export type PermissionPredicate = (permission: Permission) => boolean;
+export interface EntityId {
+  orgId: number;
+  progId: number;
+  subOrgId: number;
+}
 
 /** A single parsed permission entry. */
 export interface Permission {
   /** Code identifying the type of entity (e.g. '1' for Organization, '2' for Program). */
   entityTypeCode: EntityTypeCode;
   /** Numeric ID of the specific entity instance. */
-  entityId: {
-    orgId: number,
-    progId: number,
-    subOrgId: number
-  }
+  entityId: EntityId;
   /** Code identifying the role the user holds on this entity. */
   roleCode: RoleCode;
 }
@@ -53,6 +52,73 @@ export const GENERAL_PERMISSION_MAP = {
 } as const;
 
 export type GeneralPermission = keyof typeof GENERAL_PERMISSION_MAP;
+
+/** A predicate that tests a single Permission entry. */
+export type PermissionPredicate = (permission: Permission) => boolean;
+
+/** True if two EntityId structs refer to the same entity instance. */
+export function entityIdMatches(a: EntityId, b: EntityId): boolean {
+  return a.orgId === b.orgId && a.progId === b.progId && a.subOrgId === b.subOrgId;
+}
+
+/** The minimal interface required by EntityPredicateBuilders. */
+export interface PermissionChecker {
+  filterPermissions: (predicate: PermissionPredicate) => Permission[];
+  hasGeneralPermission: (permission: GeneralPermission) => boolean;
+}
+
+/** True if the user holds the exact role on the given entity. */
+export function hasPermission(
+  checker: PermissionChecker,
+  entityTypeCode: EntityTypeCode,
+  entityId: EntityId,
+  roleCode: RoleCode,
+): boolean {
+  return checker.filterPermissions(
+    p => p.entityTypeCode === entityTypeCode && entityIdMatches(p.entityId, entityId) && p.roleCode === roleCode
+  ).length > 0;
+}
+
+/** True if the user holds any role on the given entity. */
+export function hasAnyRole(
+  checker: PermissionChecker,
+  entityTypeCode: EntityTypeCode,
+  entityId: EntityId,
+): boolean {
+  return checker.filterPermissions(
+    p => p.entityTypeCode === entityTypeCode && entityIdMatches(p.entityId, entityId)
+  ).length > 0;
+}
+
+/** All roles the user holds on the given entity. */
+export function getRoles(
+  checker: PermissionChecker,
+  entityTypeCode: EntityTypeCode,
+  entityId: EntityId,
+): RoleCode[] {
+  return checker.filterPermissions(
+    p => p.entityTypeCode === entityTypeCode && entityIdMatches(p.entityId, entityId)
+  ).map(p => p.roleCode);
+}
+
+/** A predicate that tests a domain entity object. */
+export type EntityPredicate<T> = (entity: T) => boolean;
+
+/**
+ * A builder that receives a PermissionChecker and returns an EntityPredicate.
+ * Define these outside components for reusability and testability.
+ *
+ * @example
+ * import { hasPermission } from '../types/permissions';
+ *
+ * const adminOrMember: EntityPredicateBuilder<Program> = (checker) => (program) =>
+ *   hasPermission(checker, ENTITY_TYPE_MAP.PROGRAM.code, program, ROLE_MAP.ADMIN.code) ||
+ *   hasPermission(checker, ENTITY_TYPE_MAP.PROGRAM.code, program, ROLE_MAP.MEMBER.code);
+ *
+ * // In component:
+ * const accessible = filterEntities(programs, adminOrMember);
+ */
+export type EntityPredicateBuilder<T> = (checker: PermissionChecker) => EntityPredicate<T>;
 
 export interface PermissionToken {
   permissions: string[];            // "entityTypeCode:entityId:roleCode"

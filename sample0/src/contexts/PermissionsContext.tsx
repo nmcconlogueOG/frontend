@@ -9,57 +9,22 @@ import {
 } from 'react';
 import { AuthContext } from './AuthContext';
 import {
-  ENTITY_TYPE_MAP,
   parseGeneralPermission,
   parsePermissionString,
-  type EntityTypeCode,
+  type EntityPredicateBuilder,
   type GeneralPermission,
   type Permission,
+  type PermissionChecker,
   type PermissionToken,
-  type RoleCode,
 } from '../types/permissions';
 
-/** Extracts the numeric ID from a Permission's entityId object based on its entityTypeCode. */
-function getEntityId(entityTypeCode: EntityTypeCode, entityId: Permission['entityId']): number {
-  switch (entityTypeCode) {
-    case ENTITY_TYPE_MAP.ORGANIZATION.code:
-      return entityId.orgId;
-    case ENTITY_TYPE_MAP.PROGRAM.code:
-      return entityId.progId;
-  }
-}
-
-export interface PermissionsContextValue {
-  permissions: Permission[];
+export interface PermissionsContextValue extends PermissionChecker {
   /**
-   * True if the user holds the exact role on the given entity.
-   * @param entityTypeCode - The entity type code (e.g. ENTITY_TYPE_MAP.PROGRAM.code)
-   * @param entityId - The numeric ID of the entity instance
-   * @param roleCode - The role code to check (e.g. ROLE_MAP.ADMIN.code)
+   * Filters a list of domain entity objects using an EntityPredicateBuilder.
+   * @param entities - The list of domain objects to filter.
+   * @param builder - A predicate builder that receives a PermissionChecker and returns a predicate.
    */
-  hasPermission: (entityTypeCode: EntityTypeCode, entityId: number, roleCode: RoleCode) => boolean;
-  /**
-   * True if the user holds ANY role on the given entity.
-   * @param entityTypeCode - The entity type code
-   * @param entityId - The numeric ID of the entity instance
-   */
-  hasAnyRole: (entityTypeCode: EntityTypeCode, entityId: number) => boolean;
-  /**
-   * All roles the user holds on the given entity.
-   * @param entityTypeCode - The entity type code
-   * @param entityId - The numeric ID of the entity instance
-   */
-  getRoles: (entityTypeCode: EntityTypeCode, entityId: number) => RoleCode[];
-  /**
-   * Returns all permissions matching the given predicate.
-   * @param predicate - A function that tests each Permission; matching entries are returned.
-   */
-  filterPermissions: (predicate: (permission: Permission) => boolean) => Permission[];
-  /**
-   * True if the user has the given general (entity-less) permission.
-   * @param permission - The permission to check (e.g. "VIEW", "EDIT", "MANAGE")
-   */
-  hasGeneralPermission: (permission: GeneralPermission) => boolean;
+  filterEntities: <T>(entities: T[], builder: EntityPredicateBuilder<T>) => T[];
   /** The CSRF token from the current PermissionToken. */
   csrfToken: string;
 }
@@ -95,33 +60,6 @@ export function PermissionsProvider({ children }: { children: ReactNode }) {
 
   const { permissions, generalPermissions, csrfToken } = state;
 
-  const hasPermission = useCallback(
-    (entityTypeCode: EntityTypeCode, entityId: number, roleCode: RoleCode) =>
-      permissions.some(
-        (p) =>
-          p.entityTypeCode === entityTypeCode &&
-          getEntityId(p.entityTypeCode, p.entityId) === entityId &&
-          p.roleCode === roleCode,
-      ),
-    [permissions],
-  );
-
-  const hasAnyRole = useCallback(
-    (entityTypeCode: EntityTypeCode, entityId: number) =>
-      permissions.some(
-        (p) => p.entityTypeCode === entityTypeCode && getEntityId(p.entityTypeCode, p.entityId) === entityId,
-      ),
-    [permissions],
-  );
-
-  const getRoles = useCallback(
-    (entityTypeCode: EntityTypeCode, entityId: number): RoleCode[] =>
-      permissions
-        .filter((p) => p.entityTypeCode === entityTypeCode && getEntityId(p.entityTypeCode, p.entityId) === entityId)
-        .map((p) => p.roleCode),
-    [permissions],
-  );
-
   const filterPermissions = useCallback(
     (predicate: (permission: Permission) => boolean) => permissions.filter(predicate),
     [permissions],
@@ -132,9 +70,17 @@ export function PermissionsProvider({ children }: { children: ReactNode }) {
     [generalPermissions],
   );
 
+  const filterEntities = useCallback(
+    <T,>(entities: T[], builder: EntityPredicateBuilder<T>): T[] => {
+      const checker: PermissionChecker = { filterPermissions, hasGeneralPermission };
+      return entities.filter(builder(checker));
+    },
+    [filterPermissions, hasGeneralPermission],
+  );
+
   const value = useMemo<PermissionsContextValue>(
-    () => ({ permissions, hasPermission, hasAnyRole, getRoles, filterPermissions, hasGeneralPermission, csrfToken }),
-    [permissions, hasPermission, hasAnyRole, getRoles, filterPermissions, hasGeneralPermission, csrfToken],
+    () => ({ filterPermissions, hasGeneralPermission, filterEntities, csrfToken }),
+    [filterPermissions, hasGeneralPermission, filterEntities, csrfToken],
   );
 
   return (

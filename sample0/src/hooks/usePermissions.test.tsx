@@ -3,7 +3,7 @@ import { act, render, screen } from '@testing-library/react';
 import { AuthProvider } from '../contexts/AuthContext';
 import { PermissionsProvider } from '../contexts/PermissionsContext';
 import { usePermissions } from './usePermissions';
-import type { PermissionToken } from '../types/permissions';
+import { ENTITY_TYPE_MAP, ROLE_MAP, type PermissionToken } from '../types/permissions';
 
 function ThrowingConsumer() {
   usePermissions();
@@ -11,8 +11,11 @@ function ThrowingConsumer() {
 }
 
 function DisplayConsumer() {
-  const { hasPermission } = usePermissions();
-  return <span>{hasPermission('2', 10, '1') ? 'yes' : 'no'}</span>;
+  const { filterPermissions } = usePermissions();
+  const match = filterPermissions(
+    p => p.entityTypeCode === ENTITY_TYPE_MAP.PROGRAM.code && p.entityId.progId === 10 && p.roleCode === ROLE_MAP.ADMIN.code
+  );
+  return <span>{match.length > 0 ? 'yes' : 'no'}</span>;
 }
 
 function renderWithToken(token: PermissionToken) {
