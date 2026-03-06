@@ -31,6 +31,8 @@ export interface EntityId {
   subOrgId: number;
 }
 
+export const DEFAULT_ENTITY_ID: EntityId = { orgId: 0, progId: 0, subOrgId: 0 };
+
 /** A single parsed permission entry. */
 export interface Permission {
   /** Code identifying the type of entity (e.g. '1' for Organization, '2' for Program). */
