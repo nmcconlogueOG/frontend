@@ -5,11 +5,6 @@ import { PermissionsProvider } from '../contexts/PermissionsProvider';
 import { usePermissions } from './usePermissions';
 import { ENTITY_TYPE_MAP, ROLE_MAP, type PermissionToken } from '../types/permissions';
 
-function ThrowingConsumer() {
-  usePermissions();
-  return null;
-}
-
 function DisplayConsumer() {
   const { filterPermissions } = usePermissions();
   const match = filterPermissions(
@@ -31,16 +26,7 @@ function renderWithToken(token: PermissionToken) {
 }
 
 describe('usePermissions', () => {
-  it('throws when used outside PermissionsProvider', () => {
-    // Suppress the React error boundary console output during this test
-    const spy = vi.spyOn(console, 'error').mockImplementation(() => {});
-    expect(() => render(<ThrowingConsumer />)).toThrow(
-      'usePermissions must be used within a PermissionsProvider',
-    );
-    spy.mockRestore();
-  });
-
-  it('returns context value when inside PermissionsProvider', async () => {
+it('returns context value when inside PermissionsProvider', async () => {
     await renderWithToken({ permissions: ['2:10:1'], generalPermissions: [], csrfToken: '' });
     expect(screen.getByText('yes')).toBeInTheDocument();
   });

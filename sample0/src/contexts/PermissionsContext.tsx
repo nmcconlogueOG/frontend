@@ -19,5 +19,11 @@ export interface PermissionsContextValue {
   csrfToken: string;
 }
 
-// eslint-disable-next-line react-refresh/only-export-components
-export const PermissionsContext = createContext<PermissionsContextValue | null>(null);
+const DEFAULT_CONTEXT: PermissionsContextValue = {
+  filterPermissions: () => [],
+  hasGeneralPermission: () => false,
+  filterEntities: () => [],
+  csrfToken: '',
+};
+
+export const PermissionsContext = createContext<PermissionsContextValue>(DEFAULT_CONTEXT);
