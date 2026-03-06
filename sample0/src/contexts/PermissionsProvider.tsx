@@ -11,10 +11,10 @@ import { PermissionsContext, type PermissionsContextValue } from './PermissionsC
 import {
   parseGeneralPermission,
   parsePermissionString,
+  type Entity,
   type EntityPredicateBuilder,
   type GeneralPermission,
   type Permission,
-  type PermissionChecker,
   type PermissionToken,
 } from '../types/permissions';
 
@@ -57,11 +57,9 @@ export function PermissionsProvider({ children }: { children: ReactNode }) {
   );
 
   const filterEntities = useCallback(
-    <T,>(entities: T[], builder: EntityPredicateBuilder<T>): T[] => {
-      const checker: PermissionChecker = { filterPermissions, hasGeneralPermission };
-      return entities.filter(builder(checker));
-    },
-    [filterPermissions, hasGeneralPermission],
+    <E extends Entity>(entities: E[], builder: EntityPredicateBuilder<E>): E[] =>
+      entities.filter(builder(filterPermissions)),
+    [filterPermissions],
   );
 
   const value = useMemo<PermissionsContextValue>(

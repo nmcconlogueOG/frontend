@@ -1,16 +1,20 @@
 import { createContext } from 'react';
 import type {
+  Entity,
   EntityPredicateBuilder,
-  PermissionChecker,
+  FilterPermissions,
+  GeneralPermission,
 } from '../types/permissions';
 
-export interface PermissionsContextValue extends PermissionChecker {
+export interface PermissionsContextValue {
+  filterPermissions: FilterPermissions;
+  hasGeneralPermission: (permission: GeneralPermission) => boolean;
   /**
    * Filters a list of domain entity objects using an EntityPredicateBuilder.
    * @param entities - The list of domain objects to filter.
-   * @param builder - A predicate builder that receives a PermissionChecker and returns a predicate.
+   * @param builder - A predicate builder that receives filterPermissions and returns a predicate.
    */
-  filterEntities: <T>(entities: T[], builder: EntityPredicateBuilder<T>) => T[];
+  filterEntities: <E extends Entity>(entities: E[], builder: EntityPredicateBuilder<E>) => E[];
   /** The CSRF token from the current PermissionToken. */
   csrfToken: string;
 }
