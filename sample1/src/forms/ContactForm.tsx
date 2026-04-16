@@ -56,22 +56,10 @@ const schema: RJSFSchema = {
       type: 'object',
       title: 'Schedule',
       properties: {
-        start: {
-          type: 'object',
-          title: 'Start',
-          properties: {
-            date: { type: 'string', title: 'Date', format: 'date' },
-            time: { type: 'string', title: 'Time' },
-          },
-        },
-        end: {
-          type: 'object',
-          title: 'End',
-          properties: {
-            date: { type: 'string', title: 'Date', format: 'date' },
-            time: { type: 'string', title: 'Time' },
-          },
-        },
+        startDate: { type: 'string', title: 'Start Date', format: 'date' },
+        startTime: { type: 'string', title: 'Start Time' },
+        endDate:   { type: 'string', title: 'End Date', format: 'date' },
+        endTime:   { type: 'string', title: 'End Time' },
       },
     },
     subscribeToUpdates: { type: 'boolean', title: 'Subscribe to updates' },
@@ -89,14 +77,8 @@ const uiSchema: UiSchema = {
   },
   schedule: {
     'ui:ObjectFieldTemplate': SectionObjectTemplate,
-    start: {
-      'ui:ObjectFieldTemplate': SideBySideObjectTemplate,
-      time: { 'ui:widget': 'TimeWidget' },
-    },
-    end: {
-      'ui:ObjectFieldTemplate': SideBySideObjectTemplate,
-      time: { 'ui:widget': 'TimeWidget' },
-    },
+    startTime: { 'ui:widget': 'TimeWidget' },
+    endTime:   { 'ui:widget': 'TimeWidget' },
   },
 }
 

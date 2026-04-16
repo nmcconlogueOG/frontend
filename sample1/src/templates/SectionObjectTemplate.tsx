@@ -12,11 +12,13 @@ export function SectionObjectTemplate({
       {heading && <h2 className="font-heading-lg text-bold margin-bottom-0">{heading}</h2>}
       <hr className="margin-y-1" />
       {description && <p className="usa-hint">{description}</p>}
-      {properties.map((prop) => (
-        <div key={prop.name}>
-          {prop.content}
-        </div>
-      ))}
+      <div className="grid-row grid-gap">
+        {properties.map((prop) => (
+          <div key={prop.name} className="grid-col-6">
+            {prop.content}
+          </div>
+        ))}
+      </div>
     </div>
   )
 }
