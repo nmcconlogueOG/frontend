@@ -11,6 +11,7 @@ export function SelectWidget({
   onChange,
   onBlur,
   options,
+  schema,
 }: WidgetProps) {
   const { enumOptions = [] } = options
 
@@ -19,6 +20,7 @@ export function SelectWidget({
       <Label htmlFor={id} requiredMarker={required}>
         {label}
       </Label>
+      {schema.description && <span className="usa-hint">{schema.description}</span>}
       <Select
         id={id}
         name={id}

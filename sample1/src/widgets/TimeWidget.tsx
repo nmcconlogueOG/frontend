@@ -9,6 +9,7 @@ export function TimeWidget({
   disabled,
   readonly,
   onChange,
+  schema,
 }: WidgetProps) {
   return (
     <FormGroup>
@@ -17,6 +18,7 @@ export function TimeWidget({
         id={id}
         name={id}
         label={label}
+        hint={schema.description}
         defaultValue={value ?? undefined}
         required={required}
         disabled={disabled || readonly}

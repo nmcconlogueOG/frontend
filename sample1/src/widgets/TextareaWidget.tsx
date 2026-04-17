@@ -11,12 +11,14 @@ export function TextareaWidget({
   onChange,
   onBlur,
   onFocus,
+  schema,
 }: WidgetProps) {
   return (
     <FormGroup>
       <Label htmlFor={id} requiredMarker={required}>
         {label}
       </Label>
+      {schema.description && <span className="usa-hint">{schema.description}</span>}
       <Textarea
         id={id}
         name={id}

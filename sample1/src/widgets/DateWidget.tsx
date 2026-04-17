@@ -10,12 +10,14 @@ export function DateWidget({
   readonly,
   onChange,
   onBlur,
+  schema,
 }: WidgetProps) {
   return (
     <FormGroup>
       <Label htmlFor={id} requiredMarker={required}>
         {label}
       </Label>
+      {schema.description && <span className="usa-hint">{schema.description}</span>}
       <DatePicker
         key={value ?? ''}
         id={id}

@@ -23,6 +23,7 @@ export function TextInputWidget({
       <Label htmlFor={id} requiredMarker={required}>
         {label}
       </Label>
+      {schema.description && <span className="usa-hint">{schema.description}</span>}
       <TextInput
         id={id}
         name={id}

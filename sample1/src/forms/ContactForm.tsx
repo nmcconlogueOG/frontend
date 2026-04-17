@@ -28,15 +28,14 @@ const schema: RJSFSchema = {
       type: 'string',
       title: 'Role',
       enum: ['admin', 'member', 'viewer'],
-      enumNames: ['Admin', 'Member', 'Viewer'],
-    },
+     },
     dateOfBirth: { type: 'string', title: 'Date of birth', format: 'date' },
     appointment: {
       type: 'object',
       title: 'Appointment',
       properties: {
         date: { type: 'string', title: 'Date', format: 'date' },
-        time: { type: 'string', title: 'Time' },
+        time: { type: 'string', title: 'Time', format: 'time' },
       },
       if: {
         anyOf: [
@@ -56,10 +55,10 @@ const schema: RJSFSchema = {
       type: 'object',
       title: 'Schedule',
       properties: {
-        startDate: { type: 'string', title: 'Start Date', format: 'date' },
-        startTime: { type: 'string', title: 'Start Time' },
-        endDate:   { type: 'string', title: 'End Date', format: 'date' },
-        endTime:   { type: 'string', title: 'End Time' },
+        startDate: { type: 'string', title: 'Start Date', format: 'date',description:'hint goes here' },
+        startTime: { type: 'string', title: 'Start Time', format: 'time', description:'hint goes here' },
+        endDate:   { type: 'string', title: 'End Date', format: 'date',description:'hint goes here' },
+        endTime:   { type: 'string', title: 'End Time', format: 'time',description:'hint goes here' },
       },
     },
     subscribeToUpdates: { type: 'boolean', title: 'Subscribe to updates' },
@@ -73,12 +72,9 @@ const uiSchema: UiSchema = {
   role:        { 'ui:widget': 'select' },
   appointment: {
     'ui:ObjectFieldTemplate': SideBySideObjectTemplate,
-    time: { 'ui:widget': 'TimeWidget' },
   },
   schedule: {
     'ui:ObjectFieldTemplate': SectionObjectTemplate,
-    startTime: { 'ui:widget': 'TimeWidget' },
-    endTime:   { 'ui:widget': 'TimeWidget' },
   },
 }
 
