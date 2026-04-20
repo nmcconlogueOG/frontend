@@ -106,7 +106,7 @@ export function ContactForm() {
         uiSchema={uiSchema}
         widgets={widgets}
         validator={validator}
-        templates={{ ButtonTemplates: { SubmitButton } }}
+        templates={{ ButtonTemplates: { SubmitButton }, DescriptionFieldTemplate: () => null }}
         onSubmit={({ formData }) => setSubmitted(formData as object)}
       />
       {submitted && (
