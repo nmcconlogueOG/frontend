@@ -1,5 +1,6 @@
 import Form from '@rjsf/core'
 import type { RJSFSchema, UiSchema, SubmitButtonProps } from '@rjsf/utils'
+import { makeDateTimeRangeValidator } from '../validators/dateTimeRangeValidator'
 import validator from '@rjsf/validator-ajv8'
 import { Button } from '@trussworks/react-uswds'
 import { useState } from 'react'
@@ -88,6 +89,8 @@ const widgets = {
   TimeWidget:     TimeWidget,
 }
 
+const customValidate = makeDateTimeRangeValidator('start', 'end')
+
 function SubmitButton(_: SubmitButtonProps) {
   return (
     <Button type="submit" className="margin-top-2">
@@ -106,6 +109,7 @@ export function ContactForm() {
         uiSchema={uiSchema}
         widgets={widgets}
         validator={validator}
+        customValidate={customValidate}
         templates={{ ButtonTemplates: { SubmitButton }, DescriptionFieldTemplate: () => null }}
         onSubmit={({ formData }) => setSubmitted(formData as object)}
       />
