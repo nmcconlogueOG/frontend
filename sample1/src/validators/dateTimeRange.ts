@@ -1,38 +1,29 @@
-import type { CustomValidator } from '@rjsf/utils'
-import { getByPath, getErrorNode } from './paths'
+import { getByPath } from './paths'
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function dateTimeRange(params: Record<string, unknown>): CustomValidator<any> {
-  const { startDate, startTime, endDate, endTime, errorPath, message } = params as {
+export function dateTimeRange(formData: unknown, params: Record<string, unknown>): boolean {
+  const { startDate, startTime, endDate, endTime } = params as {
     startDate: string
     startTime?: string
     endDate: string
     endTime?: string
-    errorPath: string
-    message?: string
   }
-  return (formData, errors) => {
-    if (!formData) return errors
-    const fd = formData as Record<string, unknown>
+  if (!formData) return true
+  const fd = formData as Record<string, unknown>
 
-    const startDateVal = getByPath(fd, startDate)
-    const endDateVal   = getByPath(fd, endDate)
-    if (typeof startDateVal !== 'string' || !startDateVal) return errors
-    if (typeof endDateVal   !== 'string' || !endDateVal)   return errors
+  const startDateVal = getByPath(fd, startDate)
+  const endDateVal   = getByPath(fd, endDate)
+  if (typeof startDateVal !== 'string' || !startDateVal) return true
+  if (typeof endDateVal   !== 'string' || !endDateVal)   return true
 
-    const startTimeVal = startTime ? getByPath(fd, startTime) : undefined
-    const endTimeVal   = endTime   ? getByPath(fd, endTime)   : undefined
+  const startTimeVal = startTime ? getByPath(fd, startTime) : undefined
+  const endTimeVal   = endTime   ? getByPath(fd, endTime)   : undefined
 
-    const startStr = typeof startTimeVal === 'string' && startTimeVal
-      ? `${startDateVal}T${startTimeVal}`
-      : startDateVal
-    const endStr = typeof endTimeVal === 'string' && endTimeVal
-      ? `${endDateVal}T${endTimeVal}`
-      : endDateVal
+  const startStr = typeof startTimeVal === 'string' && startTimeVal
+    ? `${startDateVal}T${startTimeVal}`
+    : startDateVal
+  const endStr = typeof endTimeVal === 'string' && endTimeVal
+    ? `${endDateVal}T${endTimeVal}`
+    : endDateVal
 
-    if (new Date(endStr) <= new Date(startStr)) {
-      getErrorNode(errors, errorPath).addError(message ?? 'End must be after start')
-    }
-    return errors
-  }
+  return new Date(endStr) > new Date(startStr)
 }

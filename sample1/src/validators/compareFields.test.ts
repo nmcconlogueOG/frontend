@@ -1,131 +1,84 @@
 import { describe, it, expect } from 'vitest'
 import { compareFields } from './compareFields'
-import { makeErrorsMock, getErrors } from './testUtils'
+
+const lt = (field1: string, field2: string) => ({ field1, field2, type: 'number', op: 'LT' })
+const gt = (field1: string, field2: string) => ({ field1, field2, type: 'number', op: 'GT' })
 
 describe('compareFields', () => {
   describe('LT — field1 must be less than field2', () => {
-    it('passes when field1 < field2 (number)', () => {
-      const errors = makeErrorsMock()
-      compareFields({ field1: 'a', field2: 'b', errorPath: 'b', type: 'number', op: 'LT' })({ a: '1', b: '2' }, errors)
-      expect(getErrors(errors, 'b')).toHaveLength(0)
+    it('returns true when field1 < field2 (number)', () => {
+      expect(compareFields({ a: '1', b: '2' }, lt('a', 'b'))).toBe(true)
     })
 
-    it('fails when field1 > field2 (number)', () => {
-      const errors = makeErrorsMock()
-      compareFields({ field1: 'a', field2: 'b', errorPath: 'b', type: 'number', op: 'LT' })({ a: '5', b: '2' }, errors)
-      expect(getErrors(errors, 'b')).toHaveLength(1)
+    it('returns false when field1 > field2 (number)', () => {
+      expect(compareFields({ a: '5', b: '2' }, lt('a', 'b'))).toBe(false)
     })
 
-    it('fails when field1 === field2 (equal is not strictly less than)', () => {
-      const errors = makeErrorsMock()
-      compareFields({ field1: 'a', field2: 'b', errorPath: 'b', type: 'number', op: 'LT' })({ a: '5', b: '5' }, errors)
-      expect(getErrors(errors, 'b')).toHaveLength(1)
+    it('returns false when field1 === field2', () => {
+      expect(compareFields({ a: '5', b: '5' }, lt('a', 'b'))).toBe(false)
     })
 
-    it('passes for date comparison when end is after start', () => {
-      const errors = makeErrorsMock()
-      compareFields({ field1: 'start', field2: 'end', errorPath: 'end', type: 'date', op: 'LT' })
-        ({ start: '2024-01-01', end: '2024-01-02' }, errors)
-      expect(getErrors(errors, 'end')).toHaveLength(0)
+    it('returns true for date when end is after start', () => {
+      expect(compareFields(
+        { start: '2024-01-01', end: '2024-01-02' },
+        { field1: 'start', field2: 'end', type: 'date', op: 'LT' },
+      )).toBe(true)
     })
 
-    it('fails for date comparison when end is before start', () => {
-      const errors = makeErrorsMock()
-      compareFields({ field1: 'start', field2: 'end', errorPath: 'end', type: 'date', op: 'LT' })
-        ({ start: '2024-01-05', end: '2024-01-01' }, errors)
-      expect(getErrors(errors, 'end')).toHaveLength(1)
+    it('returns false for date when end is before start', () => {
+      expect(compareFields(
+        { start: '2024-01-05', end: '2024-01-01' },
+        { field1: 'start', field2: 'end', type: 'date', op: 'LT' },
+      )).toBe(false)
     })
 
-    it('passes for datetime comparison', () => {
-      const errors = makeErrorsMock()
-      compareFields({ field1: 'from', field2: 'to', errorPath: 'to', type: 'datetime', op: 'LT' })
-        ({ from: '2024-01-01T09:00', to: '2024-01-01T10:00' }, errors)
-      expect(getErrors(errors, 'to')).toHaveLength(0)
+    it('returns true for datetime comparison', () => {
+      expect(compareFields(
+        { from: '2024-01-01T09:00', to: '2024-01-01T10:00' },
+        { field1: 'from', field2: 'to', type: 'datetime', op: 'LT' },
+      )).toBe(true)
     })
 
-    it('passes for string lexicographic comparison', () => {
-      const errors = makeErrorsMock()
-      compareFields({ field1: 'a', field2: 'b', errorPath: 'b', type: 'string', op: 'LT' })
-        ({ a: 'apple', b: 'banana' }, errors)
-      expect(getErrors(errors, 'b')).toHaveLength(0)
+    it('returns true for string lexicographic comparison', () => {
+      expect(compareFields({ a: 'apple', b: 'banana' }, { field1: 'a', field2: 'b', type: 'string', op: 'LT' })).toBe(true)
     })
 
-    it('fails for string lexicographic comparison', () => {
-      const errors = makeErrorsMock()
-      compareFields({ field1: 'a', field2: 'b', errorPath: 'b', type: 'string', op: 'LT' })
-        ({ a: 'zebra', b: 'apple' }, errors)
-      expect(getErrors(errors, 'b')).toHaveLength(1)
+    it('returns false for string lexicographic comparison', () => {
+      expect(compareFields({ a: 'zebra', b: 'apple' }, { field1: 'a', field2: 'b', type: 'string', op: 'LT' })).toBe(false)
     })
   })
 
   describe('GT — field1 must be greater than field2', () => {
-    it('passes when field1 > field2 (number)', () => {
-      const errors = makeErrorsMock()
-      compareFields({ field1: 'a', field2: 'b', errorPath: 'b', type: 'number', op: 'GT' })({ a: '10', b: '5' }, errors)
-      expect(getErrors(errors, 'b')).toHaveLength(0)
+    it('returns true when field1 > field2', () => {
+      expect(compareFields({ a: '10', b: '5' }, gt('a', 'b'))).toBe(true)
     })
 
-    it('fails when field1 < field2 (number)', () => {
-      const errors = makeErrorsMock()
-      compareFields({ field1: 'a', field2: 'b', errorPath: 'b', type: 'number', op: 'GT' })({ a: '3', b: '8' }, errors)
-      expect(getErrors(errors, 'b')).toHaveLength(1)
+    it('returns false when field1 < field2', () => {
+      expect(compareFields({ a: '3', b: '8' }, gt('a', 'b'))).toBe(false)
     })
 
-    it('fails when field1 === field2', () => {
-      const errors = makeErrorsMock()
-      compareFields({ field1: 'a', field2: 'b', errorPath: 'b', type: 'number', op: 'GT' })({ a: '5', b: '5' }, errors)
-      expect(getErrors(errors, 'b')).toHaveLength(1)
+    it('returns false when field1 === field2', () => {
+      expect(compareFields({ a: '5', b: '5' }, gt('a', 'b'))).toBe(false)
     })
   })
 
-  describe('error attachment', () => {
-    it('attaches the error to errorPath, not field1', () => {
-      const errors = makeErrorsMock()
-      compareFields({ field1: 'a', field2: 'b', errorPath: 'b', type: 'number', op: 'LT' })({ a: '5', b: '2' }, errors)
-      expect(getErrors(errors, 'a')).toHaveLength(0)
-      expect(getErrors(errors, 'b')).toHaveLength(1)
-    })
-
-    it('errorPath can differ from field2', () => {
-      const errors = makeErrorsMock()
-      compareFields({ field1: 'a', field2: 'b', errorPath: 'summary', type: 'number', op: 'LT' })
-        ({ a: '5', b: '2' }, errors)
-      expect(getErrors(errors, 'summary')).toHaveLength(1)
-      expect(getErrors(errors, 'b')).toHaveLength(0)
-    })
-
-    it('uses a custom message', () => {
-      const errors = makeErrorsMock()
-      compareFields({ field1: 'a', field2: 'b', errorPath: 'b', type: 'number', op: 'LT', message: 'Custom!' })
-        ({ a: '5', b: '2' }, errors)
-      expect(getErrors(errors, 'b')).toContain('Custom!')
-    })
-
-    it('resolves nested dot-path errorPath', () => {
-      const errors = makeErrorsMock()
-      compareFields({ field1: 'group.a', field2: 'group.b', errorPath: 'group.b', type: 'number', op: 'LT' })
-        ({ group: { a: '5', b: '2' } }, errors)
-      expect(getErrors(errors, 'group.b')).toHaveLength(1)
+  describe('nested dot-path fields', () => {
+    it('resolves fields through nested objects', () => {
+      expect(compareFields({ group: { a: '5', b: '2' } }, { field1: 'group.a', field2: 'group.b', type: 'number', op: 'LT' })).toBe(false)
     })
   })
 
-  describe('skips validation', () => {
+  describe('skips validation (returns true)', () => {
     it('when field1 is missing', () => {
-      const errors = makeErrorsMock()
-      compareFields({ field1: 'a', field2: 'b', errorPath: 'b', type: 'number', op: 'LT' })({ b: '2' }, errors)
-      expect(getErrors(errors, 'b')).toHaveLength(0)
+      expect(compareFields({ b: '2' }, lt('a', 'b'))).toBe(true)
     })
 
     it('when field2 is missing', () => {
-      const errors = makeErrorsMock()
-      compareFields({ field1: 'a', field2: 'b', errorPath: 'b', type: 'number', op: 'LT' })({ a: '5' }, errors)
-      expect(getErrors(errors, 'b')).toHaveLength(0)
+      expect(compareFields({ a: '5' }, lt('a', 'b'))).toBe(true)
     })
 
     it('when formData is undefined', () => {
-      const errors = makeErrorsMock()
-      compareFields({ field1: 'a', field2: 'b', errorPath: 'b', type: 'number', op: 'LT' })(undefined, errors)
-      expect(getErrors(errors, 'b')).toHaveLength(0)
+      expect(compareFields(undefined, lt('a', 'b'))).toBe(true)
     })
   })
 })

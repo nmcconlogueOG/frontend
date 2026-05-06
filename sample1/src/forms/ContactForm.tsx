@@ -73,8 +73,8 @@ const schema: ValidatedSchema = {
         startTime: 'schedule.startTime',
         endDate:   'schedule.endDate',
         endTime:   'schedule.endTime',
-        errorPath: 'schedule.endTime',
       },
+      errorPath: 'schedule.endTime',
     },
   ],
 }

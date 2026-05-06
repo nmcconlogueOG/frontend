@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest'
-import { makeSchemaValidator, validatorRegistry, type ValidatedSchema, type ValidatorMethod } from './index'
+import { makeSchemaValidator, validatorRegistry, type ValidatedSchema, type ValidatorPredicate } from './index'
 import { makeErrorsMock, getErrors } from './testUtils'
 
 describe('makeSchemaValidator', () => {
@@ -17,25 +17,58 @@ describe('makeSchemaValidator', () => {
     })
   })
 
-  describe('method dispatch', () => {
-    it('calls the named method factory with its params', () => {
-      const mockMethod: ValidatorMethod = vi.fn(() => (_fd: unknown, err: unknown) => err)
+  describe('predicate dispatch', () => {
+    it('calls the predicate with formData and params', () => {
+      const predicate: ValidatorPredicate = vi.fn(() => true)
+      const formData = { a: '1' }
       makeSchemaValidator(
-        { 'x-validations': [{ method: 'testMethod', params: { foo: 'bar' } }] } as ValidatedSchema,
-        { testMethod: mockMethod },
-      )({}, makeErrorsMock())
-      expect(mockMethod).toHaveBeenCalledWith({ foo: 'bar' })
+        { 'x-validations': [{ method: 'test', params: { foo: 'bar' }, errorPath: 'a' }] } as ValidatedSchema,
+        { test: predicate },
+      )(formData, makeErrorsMock())
+      expect(predicate).toHaveBeenCalledWith(formData, { foo: 'bar' })
     })
 
-    it('runs all validators in order', () => {
+    it('adds no error when the predicate returns true', () => {
+      const errors = makeErrorsMock()
+      makeSchemaValidator(
+        { 'x-validations': [{ method: 'test', params: {}, errorPath: 'field' }] } as ValidatedSchema,
+        { test: () => true },
+      )({}, errors)
+      expect(getErrors(errors, 'field')).toHaveLength(0)
+    })
+
+    it('adds an error at errorPath when the predicate returns false', () => {
+      const errors = makeErrorsMock()
+      makeSchemaValidator(
+        { 'x-validations': [{ method: 'test', params: {}, errorPath: 'field', message: 'Bad value' }] } as ValidatedSchema,
+        { test: () => false },
+      )({}, errors)
+      expect(getErrors(errors, 'field')).toContain('Bad value')
+    })
+
+    it('uses a default message when none is provided', () => {
+      const errors = makeErrorsMock()
+      makeSchemaValidator(
+        { 'x-validations': [{ method: 'test', params: {}, errorPath: 'field' }] } as ValidatedSchema,
+        { test: () => false },
+      )({}, errors)
+      expect(getErrors(errors, 'field')).toHaveLength(1)
+    })
+
+    it('runs all predicates in order', () => {
       const calls: string[] = []
-      const registry = {
-        first:  (): ValidatorMethod => (_fd: unknown, err: unknown) => { calls.push('first');  return err },
-        second: (): ValidatorMethod => (_fd: unknown, err: unknown) => { calls.push('second'); return err },
+      const registry: Record<string, ValidatorPredicate> = {
+        first:  () => { calls.push('first');  return true },
+        second: () => { calls.push('second'); return true },
       }
       makeSchemaValidator(
-        { 'x-validations': [{ method: 'first', params: {} }, { method: 'second', params: {} }] } as ValidatedSchema,
-        registry as unknown as Record<string, ValidatorMethod>,
+        {
+          'x-validations': [
+            { method: 'first',  params: {}, errorPath: 'a' },
+            { method: 'second', params: {}, errorPath: 'b' },
+          ],
+        } as ValidatedSchema,
+        registry,
       )({}, makeErrorsMock())
       expect(calls).toEqual(['first', 'second'])
     })
@@ -43,27 +76,24 @@ describe('makeSchemaValidator', () => {
     it('warns and skips an unknown method', () => {
       const spy = vi.spyOn(console, 'warn').mockImplementation(() => {})
       makeSchemaValidator(
-        { 'x-validations': [{ method: 'doesNotExist', params: {} }] } as ValidatedSchema,
+        { 'x-validations': [{ method: 'doesNotExist', params: {}, errorPath: 'field' }] } as ValidatedSchema,
         {},
       )({}, makeErrorsMock())
       expect(spy).toHaveBeenCalledWith(expect.stringContaining('doesNotExist'))
       spy.mockRestore()
     })
 
-    it('still runs valid methods when an unknown method is in the list', () => {
-      const ran: boolean[] = []
-      const registry: Record<string, ValidatorMethod> = {
-        real: () => (_fd, err) => { ran.push(true); return err },
-      }
+    it('continues running valid methods after an unknown one', () => {
       vi.spyOn(console, 'warn').mockImplementation(() => {})
+      const ran: boolean[] = []
       makeSchemaValidator(
         {
           'x-validations': [
-            { method: 'unknown', params: {} },
-            { method: 'real',    params: {} },
+            { method: 'unknown', params: {}, errorPath: 'a' },
+            { method: 'real',    params: {}, errorPath: 'b' },
           ],
         } as ValidatedSchema,
-        registry,
+        { real: () => { ran.push(true); return true } },
       )({}, makeErrorsMock())
       expect(ran).toHaveLength(1)
       vi.restoreAllMocks()
@@ -71,62 +101,55 @@ describe('makeSchemaValidator', () => {
   })
 
   describe('integration with real validators', () => {
-    it('dateTimeRange: adds an error when end is before start', () => {
+    it('dateTimeRange: adds error when end is before start', () => {
       const errors = makeErrorsMock()
-      const schema: ValidatedSchema = {
-        'x-validations': [
-          {
+      makeSchemaValidator(
+        {
+          'x-validations': [{
             method: 'dateTimeRange',
-            params: {
-              startDate: 'schedule.startDate',
-              startTime: 'schedule.startTime',
-              endDate:   'schedule.endDate',
-              endTime:   'schedule.endTime',
-              errorPath: 'schedule.endTime',
-            },
-          },
-        ],
-      }
-      makeSchemaValidator(schema, validatorRegistry)(
+            params: { startDate: 'schedule.startDate', startTime: 'schedule.startTime', endDate: 'schedule.endDate', endTime: 'schedule.endTime' },
+            errorPath: 'schedule.endTime',
+            message: 'End must be after start',
+          }],
+        } as ValidatedSchema,
+        validatorRegistry,
+      )(
         { schedule: { startDate: '2024-01-01', startTime: '10:00', endDate: '2024-01-01', endTime: '09:00' } },
         errors,
       )
-      expect(getErrors(errors, 'schedule.endTime')).toHaveLength(1)
+      expect(getErrors(errors, 'schedule.endTime')).toContain('End must be after start')
     })
 
     it('dateTimeRange: no error when end is after start', () => {
       const errors = makeErrorsMock()
-      const schema: ValidatedSchema = {
-        'x-validations': [
-          {
+      makeSchemaValidator(
+        {
+          'x-validations': [{
             method: 'dateTimeRange',
-            params: {
-              startDate: 'schedule.startDate',
-              startTime: 'schedule.startTime',
-              endDate:   'schedule.endDate',
-              endTime:   'schedule.endTime',
-            },
-          },
-        ],
-      }
-      makeSchemaValidator(schema, validatorRegistry)(
+            params: { startDate: 'schedule.startDate', startTime: 'schedule.startTime', endDate: 'schedule.endDate', endTime: 'schedule.endTime' },
+            errorPath: 'schedule.endTime',
+          }],
+        } as ValidatedSchema,
+        validatorRegistry,
+      )(
         { schedule: { startDate: '2024-01-01', startTime: '09:00', endDate: '2024-01-01', endTime: '10:00' } },
         errors,
       )
       expect(getErrors(errors, 'schedule.endTime')).toHaveLength(0)
     })
 
-    it('compareFields: adds an error when field2 is not greater (LT)', () => {
+    it('compareFields: adds error when constraint fails', () => {
       const errors = makeErrorsMock()
-      const schema: ValidatedSchema = {
-        'x-validations': [
-          {
+      makeSchemaValidator(
+        {
+          'x-validations': [{
             method: 'compareFields',
-            params: { field1: 'min', field2: 'max', errorPath: 'max', type: 'number', op: 'LT' },
-          },
-        ],
-      }
-      makeSchemaValidator(schema, validatorRegistry)({ min: '10', max: '5' }, errors)
+            params: { field1: 'min', field2: 'max', type: 'number', op: 'LT' },
+            errorPath: 'max',
+          }],
+        } as ValidatedSchema,
+        validatorRegistry,
+      )({ min: '10', max: '5' }, errors)
       expect(getErrors(errors, 'max')).toHaveLength(1)
     })
   })
