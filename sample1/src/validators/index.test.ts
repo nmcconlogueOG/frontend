@@ -82,6 +82,7 @@ describe('makeSchemaValidator', () => {
               startTime: 'schedule.startTime',
               endDate:   'schedule.endDate',
               endTime:   'schedule.endTime',
+              errorPath: 'schedule.endTime',
             },
           },
         ],
@@ -121,7 +122,7 @@ describe('makeSchemaValidator', () => {
         'x-validations': [
           {
             method: 'compareFields',
-            params: { field1: 'min', field2: 'max', type: 'number', op: 'LT' },
+            params: { field1: 'min', field2: 'max', errorPath: 'max', type: 'number', op: 'LT' },
           },
         ],
       }

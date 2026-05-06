@@ -7,6 +7,7 @@ const PARAMS = {
   startTime: 'schedule.startTime',
   endDate:   'schedule.endDate',
   endTime:   'schedule.endTime',
+  errorPath: 'schedule.endTime',
 }
 
 function formData(
@@ -50,11 +51,21 @@ describe('dateTimeRange', () => {
       expect(getErrors(errors, 'schedule.endTime')).toHaveLength(1)
     })
 
-    it('attaches the error to endTime, not endDate', () => {
+    it('attaches the error to errorPath', () => {
       const errors = makeErrorsMock()
       dateTimeRange(PARAMS)(formData('2024-01-01', '10:00', '2024-01-01', '09:00'), errors)
       expect(getErrors(errors, 'schedule.endTime')).toHaveLength(1)
       expect(getErrors(errors, 'schedule.endDate')).toHaveLength(0)
+    })
+
+    it('errorPath can point anywhere', () => {
+      const errors = makeErrorsMock()
+      dateTimeRange({ ...PARAMS, errorPath: 'schedule.endDate' })(
+        formData('2024-01-01', '10:00', '2024-01-01', '09:00'),
+        errors,
+      )
+      expect(getErrors(errors, 'schedule.endDate')).toHaveLength(1)
+      expect(getErrors(errors, 'schedule.endTime')).toHaveLength(0)
     })
 
     it('uses a custom message', () => {
@@ -71,6 +82,7 @@ describe('dateTimeRange', () => {
     const DATE_ONLY_PARAMS = {
       startDate: 'schedule.startDate',
       endDate:   'schedule.endDate',
+      errorPath: 'schedule.endDate',
     }
 
     it('passes when end date is after start date', () => {
@@ -89,16 +101,6 @@ describe('dateTimeRange', () => {
         errors,
       )
       expect(getErrors(errors, 'schedule.endDate')).toHaveLength(1)
-    })
-
-    it('attaches the error to endDate when there is no endTime field', () => {
-      const errors = makeErrorsMock()
-      dateTimeRange(DATE_ONLY_PARAMS)(
-        { schedule: { startDate: '2024-01-05', endDate: '2024-01-01' } },
-        errors,
-      )
-      expect(getErrors(errors, 'schedule.endDate')).toHaveLength(1)
-      expect(getErrors(errors, 'schedule.endTime')).toHaveLength(0)
     })
   })
 

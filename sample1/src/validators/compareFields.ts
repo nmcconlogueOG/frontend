@@ -15,9 +15,10 @@ function coerce(value: string, type: FieldType): number | string {
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function compareFields(params: Record<string, unknown>): CustomValidator<any> {
-  const { field1, field2, type, op, message } = params as {
+  const { field1, field2, errorPath, type, op, message } = params as {
     field1: string
     field2: string
+    errorPath: string
     type: FieldType
     op: CompareOp
     message?: string
@@ -34,7 +35,7 @@ export function compareFields(params: Record<string, unknown>): CustomValidator<
     const valid = op === 'LT' ? a < b : a > b
 
     if (!valid) {
-      getErrorNode(errors, field2).addError(
+      getErrorNode(errors, errorPath).addError(
         message ?? `Must be ${op === 'LT' ? 'after' : 'before'} ${field1}`
       )
     }

@@ -3,11 +3,12 @@ import { getByPath, getErrorNode } from './paths'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function dateTimeRange(params: Record<string, unknown>): CustomValidator<any> {
-  const { startDate, startTime, endDate, endTime, message } = params as {
+  const { startDate, startTime, endDate, endTime, errorPath, message } = params as {
     startDate: string
     startTime?: string
     endDate: string
     endTime?: string
+    errorPath: string
     message?: string
   }
   return (formData, errors) => {
@@ -30,7 +31,6 @@ export function dateTimeRange(params: Record<string, unknown>): CustomValidator<
       : endDateVal
 
     if (new Date(endStr) <= new Date(startStr)) {
-      const errorPath = typeof endTimeVal === 'string' && endTimeVal ? endTime! : endDate
       getErrorNode(errors, errorPath).addError(message ?? 'End must be after start')
     }
     return errors
