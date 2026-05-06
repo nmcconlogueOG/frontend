@@ -1,6 +1,6 @@
 import Form from '@rjsf/core'
-import type { RJSFSchema, UiSchema, SubmitButtonProps } from '@rjsf/utils'
-import { makeDateTimeRangeValidator } from '../validators/dateTimeRangeValidator'
+import type { UiSchema, SubmitButtonProps } from '@rjsf/utils'
+import { makeSchemaValidator, validatorRegistry, type ValidatedSchema } from '../validators'
 import validator from '@rjsf/validator-ajv8'
 import { Button } from '@trussworks/react-uswds'
 import { useState } from 'react'
@@ -15,7 +15,7 @@ import {
 import { SideBySideObjectTemplate } from '../templates/SideBySideObjectTemplate'
 import { SectionObjectTemplate } from '../templates/SectionObjectTemplate'
 
-const schema: RJSFSchema = {
+const schema: ValidatedSchema = {
   title: 'Contact Information',
   type: 'object',
   required: ['firstName', 'lastName', 'email'],
@@ -65,6 +65,17 @@ const schema: RJSFSchema = {
     subscribeToUpdates: { type: 'boolean', title: 'Subscribe to updates' },
     comments: { type: 'string', title: 'Comments' },
   },
+  'x-validations': [
+    {
+      method: 'dateTimeRange',
+      params: {
+        startDate: 'schedule.startDate',
+        startTime: 'schedule.startTime',
+        endDate:   'schedule.endDate',
+        endTime:   'schedule.endTime',
+      },
+    },
+  ],
 }
 
 const uiSchema: UiSchema = {
@@ -89,7 +100,7 @@ const widgets = {
   TimeWidget:     TimeWidget,
 }
 
-const customValidate = makeDateTimeRangeValidator('start', 'end')
+const customValidate = makeSchemaValidator(schema, validatorRegistry)
 
 function SubmitButton(_: SubmitButtonProps) {
   return (
