@@ -1,5 +1,7 @@
+import { useContext } from 'react'
 import { FormGroup, Label, Select } from '@trussworks/react-uswds'
 import type { WidgetProps } from '@rjsf/utils'
+import { PageContext } from '../contexts/PageContext'
 
 export function SelectWidget({
   id,
@@ -13,6 +15,10 @@ export function SelectWidget({
   options,
   schema,
 }: WidgetProps) {
+  const currentPage = useContext(PageContext)
+  const fieldPage = options.page as string | undefined
+  if (fieldPage !== undefined && fieldPage !== currentPage) return null
+
   const { enumOptions = [] } = options
 
   return (

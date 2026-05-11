@@ -1,5 +1,7 @@
+import { useContext } from 'react'
 import { FormGroup, Label, Textarea } from '@trussworks/react-uswds'
 import type { WidgetProps } from '@rjsf/utils'
+import { PageContext } from '../contexts/PageContext'
 
 export function TextareaWidget({
   id,
@@ -11,8 +13,13 @@ export function TextareaWidget({
   onChange,
   onBlur,
   onFocus,
+  options,
   schema,
 }: WidgetProps) {
+  const currentPage = useContext(PageContext)
+  const fieldPage = options.page as string | undefined
+  if (fieldPage !== undefined && fieldPage !== currentPage) return null
+
   return (
     <FormGroup>
       <Label htmlFor={id} requiredMarker={required}>

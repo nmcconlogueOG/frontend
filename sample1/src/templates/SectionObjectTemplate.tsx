@@ -1,11 +1,18 @@
+import { useContext } from 'react'
 import type { ObjectFieldTemplateProps } from '@rjsf/utils'
+import { PageContext } from '../contexts/PageContext'
 
 export function SectionObjectTemplate({
   title,
   schema,
   description,
   properties,
+  uiSchema,
 }: ObjectFieldTemplateProps) {
+  const currentPage = useContext(PageContext)
+  const fieldPage = (uiSchema?.['ui:options'] as Record<string, unknown> | undefined)?.page as string | undefined
+  if (fieldPage !== undefined && fieldPage !== currentPage) return null
+
   const heading = schema.title ?? title
   return (
     <div className="margin-top-3">

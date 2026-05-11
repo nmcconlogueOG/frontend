@@ -1,9 +1,9 @@
+import { useRef, useState } from 'react'
 import Form from '@rjsf/core'
-import type { UiSchema, SubmitButtonProps } from '@rjsf/utils'
+import type { UiSchema } from '@rjsf/utils'
 import { makeSchemaValidator, validatorRegistry, type ValidatedSchema } from '../validators'
 import validator from '@rjsf/validator-ajv8'
 import { Button } from '@trussworks/react-uswds'
-import { useState } from 'react'
 import {
   CheckboxWidget,
   DateWidget,
@@ -14,6 +14,7 @@ import {
 } from '../widgets'
 import { SideBySideObjectTemplate } from '../templates/SideBySideObjectTemplate'
 import { SectionObjectTemplate } from '../templates/SectionObjectTemplate'
+import { PageContext } from '../contexts/PageContext'
 
 const schema: ValidatedSchema = {
   title: 'Contact Information',
@@ -81,14 +82,17 @@ const schema: ValidatedSchema = {
 
 const uiSchema: UiSchema = {
   'ui:globalOptions': { label: false },
-  comments:    { 'ui:widget': 'textarea' },
-  role:        { 'ui:widget': 'select' },
-  appointment: {
-    'ui:ObjectFieldTemplate': SideBySideObjectTemplate,
-  },
-  schedule: {
-    'ui:ObjectFieldTemplate': SectionObjectTemplate,
-  },
+  firstName:          { 'ui:options': { page: 'personal' } },
+  lastName:           { 'ui:options': { page: 'personal' } },
+  email:              { 'ui:options': { page: 'personal' } },
+  phone:              { 'ui:options': { page: 'personal' } },
+  organization:       { 'ui:options': { page: 'professional' } },
+  role:               { 'ui:widget': 'select', 'ui:options': { page: 'professional' } },
+  dateOfBirth:        { 'ui:options': { page: 'professional' } },
+  appointment:        { 'ui:ObjectFieldTemplate': SideBySideObjectTemplate, 'ui:options': { page: 'scheduling' } },
+  schedule:           { 'ui:ObjectFieldTemplate': SectionObjectTemplate, 'ui:options': { page: 'scheduling' } },
+  subscribeToUpdates: { 'ui:options': { page: 'preferences' } },
+  comments:           { 'ui:widget': 'textarea', 'ui:options': { page: 'preferences' } },
 }
 
 const widgets = {
@@ -103,28 +107,63 @@ const widgets = {
 
 const customValidate = makeSchemaValidator(schema, validatorRegistry)
 
-function SubmitButton(_: SubmitButtonProps) {
-  return (
-    <Button type="submit" className="margin-top-2">
-      Submit
-    </Button>
-  )
+const PAGES = ['personal', 'professional', 'scheduling', 'preferences'] as const
+type Page = typeof PAGES[number]
+
+const PAGE_LABELS: Record<Page, string> = {
+  personal:     'Personal',
+  professional: 'Professional',
+  scheduling:   'Scheduling',
+  preferences:  'Preferences',
 }
 
 export function ContactForm() {
+  const [pageIndex, setPageIndex] = useState(0)
+  const [formData, setFormData] = useState<object>({})
   const [submitted, setSubmitted] = useState<object | null>(null)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const formRef = useRef<any>(null)
+
+  const currentPage = PAGES[pageIndex]
+  const isLastPage = pageIndex === PAGES.length - 1
 
   return (
-    <>
+    <PageContext.Provider value={currentPage}>
+      <div className="margin-bottom-1 text-base">
+        {PAGE_LABELS[currentPage]} — step {pageIndex + 1} of {PAGES.length}
+      </div>
       <Form
+        ref={formRef}
         schema={schema}
         uiSchema={uiSchema}
+        formData={formData}
         widgets={widgets}
         validator={validator}
         customValidate={customValidate}
-        templates={{ ButtonTemplates: { SubmitButton }, DescriptionFieldTemplate: () => null }}
+        noHtml5Validate
+        templates={{
+          ButtonTemplates: { SubmitButton: () => null },
+          DescriptionFieldTemplate: () => null,
+        }}
+        onChange={({ formData }) => setFormData(formData as object ?? {})}
         onSubmit={({ formData }) => setSubmitted(formData as object)}
       />
+      <div className="display-flex flex-gap-2 margin-top-2">
+        {pageIndex > 0 && (
+          <Button type="button" outline onClick={() => setPageIndex(i => i - 1)}>
+            Back
+          </Button>
+        )}
+        {isLastPage ? (
+          <Button type="button" onClick={() => formRef.current?.submit()}>
+            Submit
+          </Button>
+        ) : (
+          <Button type="button" onClick={() => setPageIndex(i => i + 1)}>
+            Next
+          </Button>
+        )}
+      </div>
       {submitted && (
         <div className="margin-top-4">
           <h3>Submitted data</h3>
@@ -133,6 +172,6 @@ export function ContactForm() {
           </pre>
         </div>
       )}
-    </>
+    </PageContext.Provider>
   )
 }

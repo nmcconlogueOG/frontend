@@ -1,6 +1,8 @@
+import { useContext } from 'react'
 import { ComboBox, FormGroup, Label } from '@trussworks/react-uswds'
 import type { ComboBoxOption } from '@trussworks/react-uswds'
 import type { WidgetProps } from '@rjsf/utils'
+import { PageContext } from '../contexts/PageContext'
 
 const TIME_STEP = 30
 
@@ -32,8 +34,13 @@ export function TimeWidget({
   disabled,
   readonly,
   onChange,
+  options,
   schema,
 }: WidgetProps) {
+  const currentPage = useContext(PageContext)
+  const fieldPage = options.page as string | undefined
+  if (fieldPage !== undefined && fieldPage !== currentPage) return null
+
   const hint = schema.description ?? DEFAULT_HINT
   return (
     <FormGroup>

@@ -1,5 +1,7 @@
+import { useContext } from 'react'
 import { FormGroup, Label, TextInput } from '@trussworks/react-uswds'
 import type { WidgetProps } from '@rjsf/utils'
+import { PageContext } from '../contexts/PageContext'
 
 export function TextInputWidget({
   id,
@@ -11,8 +13,13 @@ export function TextInputWidget({
   onChange,
   onBlur,
   onFocus,
+  options,
   schema,
 }: WidgetProps) {
+  const currentPage = useContext(PageContext)
+  const fieldPage = options.page as string | undefined
+  if (fieldPage !== undefined && fieldPage !== currentPage) return null
+
   const inputType =
     schema.format === 'email' ? 'email'
     : schema.format === 'uri' ? 'url'

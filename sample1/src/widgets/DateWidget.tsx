@@ -1,5 +1,7 @@
+import { useContext } from 'react'
 import { DatePicker, FormGroup, Label } from '@trussworks/react-uswds'
 import type { WidgetProps } from '@rjsf/utils'
+import { PageContext } from '../contexts/PageContext'
 
 export function DateWidget({
   id,
@@ -10,8 +12,13 @@ export function DateWidget({
   readonly,
   onChange,
   onBlur,
+  options,
   schema,
 }: WidgetProps) {
+  const currentPage = useContext(PageContext)
+  const fieldPage = options.page as string | undefined
+  if (fieldPage !== undefined && fieldPage !== currentPage) return null
+
   return (
     <FormGroup>
       <Label htmlFor={id} requiredMarker={required}>
