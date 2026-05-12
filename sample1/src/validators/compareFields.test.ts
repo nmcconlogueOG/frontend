@@ -77,8 +77,8 @@ describe('compareFields', () => {
       expect(compareFields({ a: '5' }, lt('a', 'b'))).toBe(true)
     })
 
-    it('when formData is undefined', () => {
-      expect(compareFields(undefined, lt('a', 'b'))).toBe(true)
+    it('when formData is empty', () => {
+      expect(compareFields({}, lt('a', 'b'))).toBe(true)
     })
   })
 })

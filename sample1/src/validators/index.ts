@@ -2,8 +2,9 @@ import type { CustomValidator, RJSFSchema } from '@rjsf/utils'
 import { getErrorNode } from './paths'
 import { compareFields } from './compareFields'
 import { dateTimeRange } from './dateTimeRange'
+import { type FormData } from '../types/formData'
 
-export type ValidatorPredicate = (formData: unknown, params: Record<string, unknown>) => boolean
+export type ValidatorPredicate = (formData: FormData, params: Record<string, unknown>) => boolean
 
 export interface SchemaValidation {
   method: string

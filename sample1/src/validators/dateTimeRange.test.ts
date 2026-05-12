@@ -59,8 +59,8 @@ describe('dateTimeRange', () => {
       expect(dateTimeRange(formData('2024-01-01', '09:00', '', '10:00'), PARAMS)).toBe(true)
     })
 
-    it('when formData is undefined', () => {
-      expect(dateTimeRange(undefined, PARAMS)).toBe(true)
+    it('when formData is empty', () => {
+      expect(dateTimeRange({}, PARAMS)).toBe(true)
     })
   })
 })

@@ -14,7 +14,7 @@ import {
 } from '../widgets'
 import { SideBySideObjectTemplate } from '../templates/SideBySideObjectTemplate'
 import { SectionObjectTemplate } from '../templates/SectionObjectTemplate'
-import { FormProvider, useFormContext } from '../contexts/FormContext'
+import { FormProvider, useFormContext, type FormData } from '../contexts/FormContext'
 
 const schema: ValidatedSchema = {
   title: 'Contact Information',
@@ -118,7 +118,7 @@ const PAGE_LABELS: Record<Page, string> = {
 }
 
 function ContactFormBody() {
-  const [submitted, setSubmitted] = useState<object | null>(null)
+  const [submitted, setSubmitted] = useState<FormData | null>(null)
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const formRef = useRef<any>(null)
 
@@ -142,8 +142,8 @@ function ContactFormBody() {
           ButtonTemplates: { SubmitButton: () => null },
           DescriptionFieldTemplate: () => null,
         }}
-        onChange={({ formData }) => setFormData((formData as Record<string, unknown>) ?? {})}
-        onSubmit={({ formData }) => setSubmitted(formData as object)}
+        onChange={({ formData }) => setFormData((formData as FormData) ?? {})}
+        onSubmit={({ formData }) => setSubmitted(formData as FormData)}
       />
       <div className="display-flex flex-gap-2 margin-top-2">
         {pageIndex > 0 && (

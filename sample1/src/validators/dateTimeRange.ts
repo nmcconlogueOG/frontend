@@ -1,22 +1,21 @@
 import { getByPath } from './paths'
+import { type FormData } from '../types/formData'
 
-export function dateTimeRange(formData: unknown, params: Record<string, unknown>): boolean {
+export function dateTimeRange(formData: FormData, params: Record<string, unknown>): boolean {
   const { startDate, startTime, endDate, endTime } = params as {
     startDate: string
     startTime?: string
     endDate: string
     endTime?: string
   }
-  if (!formData) return true
-  const fd = formData as Record<string, unknown>
 
-  const startDateVal = getByPath(fd, startDate)
-  const endDateVal   = getByPath(fd, endDate)
+  const startDateVal = getByPath(formData, startDate)
+  const endDateVal   = getByPath(formData, endDate)
   if (typeof startDateVal !== 'string' || !startDateVal) return true
   if (typeof endDateVal   !== 'string' || !endDateVal)   return true
 
-  const startTimeVal = startTime ? getByPath(fd, startTime) : undefined
-  const endTimeVal   = endTime   ? getByPath(fd, endTime)   : undefined
+  const startTimeVal = startTime ? getByPath(formData, startTime) : undefined
+  const endTimeVal   = endTime   ? getByPath(formData, endTime)   : undefined
 
   const startStr = typeof startTimeVal === 'string' && startTimeVal
     ? `${startDateVal}T${startTimeVal}`
