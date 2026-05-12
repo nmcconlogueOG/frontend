@@ -14,7 +14,7 @@ import {
 } from '../widgets'
 import { SideBySideObjectTemplate } from '../templates/SideBySideObjectTemplate'
 import { SectionObjectTemplate } from '../templates/SectionObjectTemplate'
-import { PageContext } from '../contexts/PageContext'
+import { FormProvider, useFormContext } from '../contexts/FormContext'
 
 const schema: ValidatedSchema = {
   title: 'Contact Information',
@@ -117,20 +117,17 @@ const PAGE_LABELS: Record<Page, string> = {
   preferences:  'Preferences',
 }
 
-export function ContactForm() {
-  const [pageIndex, setPageIndex] = useState(0)
-  const [formData, setFormData] = useState<object>({})
+function ContactFormBody() {
   const [submitted, setSubmitted] = useState<object | null>(null)
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const formRef = useRef<any>(null)
 
-  const currentPage = PAGES[pageIndex]
-  const isLastPage = pageIndex === PAGES.length - 1
+  const { formData, setFormData, pageIndex, currentPage, totalPages, isLastPage, nextPage, prevPage } = useFormContext()
 
   return (
-    <PageContext.Provider value={currentPage}>
+    <>
       <div className="margin-bottom-1 text-base">
-        {PAGE_LABELS[currentPage]} — step {pageIndex + 1} of {PAGES.length}
+        {PAGE_LABELS[currentPage as Page]} — step {pageIndex + 1} of {totalPages}
       </div>
       <Form
         ref={formRef}
@@ -145,12 +142,12 @@ export function ContactForm() {
           ButtonTemplates: { SubmitButton: () => null },
           DescriptionFieldTemplate: () => null,
         }}
-        onChange={({ formData }) => setFormData(formData as object ?? {})}
+        onChange={({ formData }) => setFormData((formData as Record<string, unknown>) ?? {})}
         onSubmit={({ formData }) => setSubmitted(formData as object)}
       />
       <div className="display-flex flex-gap-2 margin-top-2">
         {pageIndex > 0 && (
-          <Button type="button" outline onClick={() => setPageIndex(i => i - 1)}>
+          <Button type="button" outline onClick={prevPage}>
             Back
           </Button>
         )}
@@ -159,7 +156,7 @@ export function ContactForm() {
             Submit
           </Button>
         ) : (
-          <Button type="button" onClick={() => setPageIndex(i => i + 1)}>
+          <Button type="button" onClick={nextPage}>
             Next
           </Button>
         )}
@@ -172,6 +169,14 @@ export function ContactForm() {
           </pre>
         </div>
       )}
-    </PageContext.Provider>
+    </>
+  )
+}
+
+export function ContactForm() {
+  return (
+    <FormProvider pages={PAGES}>
+      <ContactFormBody />
+    </FormProvider>
   )
 }
