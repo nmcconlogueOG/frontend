@@ -41,6 +41,8 @@ export type AutofillFn = (
 ) => FormDataValue | undefined
 export type AutofillRegistry = Record<string, AutofillFn>
 export type AutofillRule = {
+  // Where to write the computed value. Omit in uiSchema — extractAutofillRules
+  // infers it from the field's own path so it never needs to be repeated.
   target: string
   fn: string
   params?: Record<string, unknown>
@@ -49,20 +51,27 @@ export type AutofillRule = {
   mode?: 'always' | 'default-only'
 }
 
+// uiSchema shape for the autofill annotation — target is omitted because the
+// field's own path is always the target.
+type UiAutofillAnnotation = Omit<AutofillRule, 'target'> & { target?: string }
+
+// Tracks the current dot-path so target can be inferred from the field's
+// position in the schema rather than repeated in every annotation.
 export function extractAutofillRules(uiSchema: Record<string, unknown>): AutofillRule[] {
   const rules: AutofillRule[] = []
-  function walk(node: Record<string, unknown>) {
+  function walk(node: Record<string, unknown>, path: string) {
     const opts = node['ui:options'] as Record<string, unknown> | undefined
-    if (opts?.autofill && typeof opts.autofill === 'object') {
-      rules.push(opts.autofill as AutofillRule)
+    if (opts?.autofill && typeof opts.autofill === 'object' && path) {
+      const annotation = opts.autofill as UiAutofillAnnotation
+      rules.push({ ...annotation, target: annotation.target ?? path })
     }
     for (const key of Object.keys(node)) {
       if (!key.startsWith('ui:') && node[key] !== null && typeof node[key] === 'object') {
-        walk(node[key] as Record<string, unknown>)
+        walk(node[key] as Record<string, unknown>, path ? `${path}.${key}` : key)
       }
     }
   }
-  walk(uiSchema)
+  walk(uiSchema, '')
   return rules
 }
 

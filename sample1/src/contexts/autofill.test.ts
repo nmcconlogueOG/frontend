@@ -71,13 +71,12 @@ describe('extractAutofillRules', () => {
     expect(extractAutofillRules({ firstName: { 'ui:options': { page: 'p1' } } })).toEqual([])
   })
 
-  it('extracts a rule including params and mode', () => {
+  it('infers target from the field path when not specified', () => {
     const rules = extractAutofillRules({
       schedule: {
         endDate: {
           'ui:options': {
             autofill: {
-              target: 'schedule.endDate',
               fn: 'addMonthsToField',
               params: { source: 'scheduleStart', months: 1 },
               mode: 'always',
@@ -95,13 +94,21 @@ describe('extractAutofillRules', () => {
     })
   })
 
-  it('extracts multiple rules from different fields', () => {
+  it('uses an explicit target when provided, overriding the field path', () => {
     const rules = extractAutofillRules({
-      a: { 'ui:options': { autofill: { target: 'a', fn: 'fnA' } } },
-      b: { 'ui:options': { autofill: { target: 'b', fn: 'fnB' } } },
+      a: { 'ui:options': { autofill: { fn: 'fnA', target: 'b' } } },
+    })
+    expect(rules[0].target).toBe('b')
+  })
+
+  it('extracts multiple rules and infers each target from its field path', () => {
+    const rules = extractAutofillRules({
+      a: { 'ui:options': { autofill: { fn: 'fnA' } } },
+      b: { 'ui:options': { autofill: { fn: 'fnB' } } },
     })
     expect(rules).toHaveLength(2)
     expect(rules.map(r => r.fn)).toEqual(['fnA', 'fnB'])
+    expect(rules.map(r => r.target)).toEqual(['a', 'b'])
   })
 })
 

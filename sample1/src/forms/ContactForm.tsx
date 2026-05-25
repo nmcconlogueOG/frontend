@@ -98,7 +98,6 @@ const uiSchema: UiSchema = {
     endDate: {
       'ui:options': {
         autofill: {
-          target: 'schedule.endDate',
           fn: 'addMonthsToField',
           params: { source: 'scheduleStart', months: 1 },
           mode: 'always',
