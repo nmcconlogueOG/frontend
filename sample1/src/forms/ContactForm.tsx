@@ -14,10 +14,8 @@ import {
 } from '../widgets'
 import { SideBySideObjectTemplate } from '../templates/SideBySideObjectTemplate'
 import { SectionObjectTemplate } from '../templates/SectionObjectTemplate'
-import {
-  FormProvider, useFormContext, type FormData, type DefaultsRegistry,
-  type AutofillRegistry, extractAutofillRules, extractProvidesMap,
-} from '../contexts/FormContext'
+import { FormProvider, useFormContext, type FormData, type DefaultsRegistry } from '../contexts/FormContext'
+import { type AutofillRegistry, extractAutofillRules, extractProvidesMap } from '../contexts/autofill'
 
 const schema: ValidatedSchema = {
   title: 'Contact Information',
