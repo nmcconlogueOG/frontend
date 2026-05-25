@@ -14,7 +14,10 @@ import {
 } from '../widgets'
 import { SideBySideObjectTemplate } from '../templates/SideBySideObjectTemplate'
 import { SectionObjectTemplate } from '../templates/SectionObjectTemplate'
-import { FormProvider, useFormContext, type FormData } from '../contexts/FormContext'
+import {
+  FormProvider, useFormContext, type FormData, type DefaultsRegistry,
+  type AutofillRegistry, extractAutofillRules, extractProvidesMap,
+} from '../contexts/FormContext'
 
 const schema: ValidatedSchema = {
   title: 'Contact Information',
@@ -90,7 +93,21 @@ const uiSchema: UiSchema = {
   role:               { 'ui:widget': 'select', 'ui:options': { page: 'professional' } },
   dateOfBirth:        { 'ui:options': { page: 'professional' } },
   appointment:        { 'ui:ObjectFieldTemplate': SideBySideObjectTemplate, 'ui:options': { page: 'scheduling' } },
-  schedule:           { 'ui:ObjectFieldTemplate': SectionObjectTemplate, 'ui:options': { page: 'scheduling' } },
+  schedule: {
+    'ui:ObjectFieldTemplate': SectionObjectTemplate,
+    'ui:options': { page: 'scheduling' },
+    startDate: { 'ui:options': { provides: 'scheduleStart' } },
+    endDate: {
+      'ui:options': {
+        autofill: {
+          target: 'schedule.endDate',
+          fn: 'addMonthsToField',
+          params: { source: 'scheduleStart', months: 1 },
+          mode: 'always',
+        },
+      },
+    },
+  },
   subscribeToUpdates: { 'ui:options': { page: 'preferences' } },
   comments:           { 'ui:widget': 'textarea', 'ui:options': { page: 'preferences' } },
 }
@@ -109,6 +126,26 @@ const customValidate = makeSchemaValidator(schema, validatorRegistry)
 
 const PAGES = ['personal', 'professional', 'scheduling', 'preferences'] as const
 type Page = typeof PAGES[number]
+
+const autofillRegistry: AutofillRegistry = {
+  // Reads a date from depStore[params.source], adds params.months, returns yyyy-MM-dd
+  addMonthsToField: (_formData, depStore, params) => {
+    const raw = depStore[params.source as string]
+    if (typeof raw !== 'string' || !raw) return undefined
+    const d = new Date(raw)
+    d.setMonth(d.getMonth() + (params.months as number))
+    return d.toISOString().split('T')[0]
+  },
+}
+
+const autofillRules = extractAutofillRules(uiSchema)
+const providesMap   = extractProvidesMap(uiSchema)
+
+const defaultsRegistry: DefaultsRegistry = {
+  preferences: [
+    (data) => data.role === 'admin' ? { subscribeToUpdates: true } : {},
+  ],
+}
 
 const PAGE_LABELS: Record<Page, string> = {
   personal:     'Personal',
@@ -175,7 +212,13 @@ function ContactFormBody() {
 
 export function ContactForm() {
   return (
-    <FormProvider pages={PAGES}>
+    <FormProvider
+      pages={PAGES}
+      defaultsRegistry={defaultsRegistry}
+      autofillRules={autofillRules}
+      autofillRegistry={autofillRegistry}
+      providesMap={providesMap}
+    >
       <ContactFormBody />
     </FormProvider>
   )
