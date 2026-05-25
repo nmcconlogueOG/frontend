@@ -132,8 +132,9 @@ const autofillRegistry: AutofillRegistry = {
   addMonthsToField: (_formData, depStore, params) => {
     const raw = depStore[params.source as string]
     if (typeof raw !== 'string' || !raw) return undefined
-    const d = new Date(raw)
-    d.setMonth(d.getMonth() + (params.months as number))
+    // Parse as UTC components to avoid local-timezone shifting the date before arithmetic
+    const [year, month, day] = raw.split('-').map(Number)
+    const d = new Date(Date.UTC(year, month - 1 + (params.months as number), day))
     return d.toISOString().split('T')[0]
   },
 }
