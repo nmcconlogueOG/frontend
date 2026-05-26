@@ -102,15 +102,24 @@ export function buildDepStore(formData: FormData, providesMap: ProvidesMap): Dep
   return store
 }
 
-// Pure function — no closure over component state. Safe to call from
-// useCallback without capturing stale props.
+// fieldPath → depKey. Used for O(1) lookup in updateField: "does this path
+// provide a dependency?" without scanning the full providesMap every time.
+export type ReverseProvides = Record<string, string>
+
+export function buildReverseProvides(providesMap: ProvidesMap): ReverseProvides {
+  return Object.fromEntries(
+    Object.entries(providesMap).map(([depKey, fieldPath]) => [fieldPath, depKey])
+  )
+}
+
+// Accepts a pre-built depStore so the caller controls when and how it is
+// updated — full rebuild on setFormData, single-entry update on updateField.
 export function applyAutofill(
   data: FormData,
   rules: AutofillRule[],
   registry: AutofillRegistry,
-  providesMap: ProvidesMap,
+  depStore: DepStore,
 ): FormData {
-  const depStore = buildDepStore(data, providesMap)
   let result = data
   for (const rule of rules) {
     const fn = registry[rule.fn]

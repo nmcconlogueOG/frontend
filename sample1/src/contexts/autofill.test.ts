@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { extractProvidesMap, extractAutofillRules } from './autofill'
+import { extractProvidesMap, extractAutofillRules, buildReverseProvides } from './autofill'
 import type { AutofillFn, DepStore } from './autofill'
 
 // ---------------------------------------------------------------------------
@@ -59,6 +59,26 @@ describe('extractProvidesMap', () => {
     expect(extractProvidesMap({
       field: { 'ui:options': { provides: 42 } },
     })).toEqual({})
+  })
+})
+
+// ---------------------------------------------------------------------------
+// buildReverseProvides
+// ---------------------------------------------------------------------------
+
+describe('buildReverseProvides', () => {
+  it('inverts a providesMap to fieldPath → depKey', () => {
+    expect(buildReverseProvides({
+      scheduleStart: 'schedule.startDate',
+      userRole:      'role',
+    })).toEqual({
+      'schedule.startDate': 'scheduleStart',
+      'role':               'userRole',
+    })
+  })
+
+  it('returns an empty map for an empty providesMap', () => {
+    expect(buildReverseProvides({})).toEqual({})
   })
 })
 
