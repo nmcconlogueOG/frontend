@@ -55,42 +55,39 @@ export type AutofillRule = {
 // field's own path is always the target.
 type UiAutofillAnnotation = Omit<AutofillRule, 'target'> & { target?: string }
 
-// Tracks the current dot-path so target can be inferred from the field's
-// position in the schema rather than repeated in every annotation.
+type UiSchemaVisitor = (opts: Record<string, unknown>, path: string) => void
+
+// Single traversal used by both extractors. Visitor is called for every node
+// that has ui:options, with the node's dot-path in formData. Root is skipped
+// (path is empty) since it has no corresponding formData field.
+function walkUiSchema(node: Record<string, unknown>, path: string, visit: UiSchemaVisitor): void {
+  const opts = node['ui:options'] as Record<string, unknown> | undefined
+  if (opts && path) visit(opts, path)
+  for (const key of Object.keys(node)) {
+    if (!key.startsWith('ui:') && node[key] !== null && typeof node[key] === 'object') {
+      walkUiSchema(node[key] as Record<string, unknown>, path ? `${path}.${key}` : key, visit)
+    }
+  }
+}
+
 export function extractAutofillRules(uiSchema: Record<string, unknown>): AutofillRule[] {
   const rules: AutofillRule[] = []
-  function walk(node: Record<string, unknown>, path: string) {
-    const opts = node['ui:options'] as Record<string, unknown> | undefined
-    if (opts?.autofill && typeof opts.autofill === 'object' && path) {
+  walkUiSchema(uiSchema, '', (opts, path) => {
+    if (opts.autofill && typeof opts.autofill === 'object') {
       const annotation = opts.autofill as UiAutofillAnnotation
       rules.push({ ...annotation, target: annotation.target ?? path })
     }
-    for (const key of Object.keys(node)) {
-      if (!key.startsWith('ui:') && node[key] !== null && typeof node[key] === 'object') {
-        walk(node[key] as Record<string, unknown>, path ? `${path}.${key}` : key)
-      }
-    }
-  }
-  walk(uiSchema, '')
+  })
   return rules
 }
 
-// Walks uiSchema tracking the current dot-path so provides annotations map
-// to the correct formData location regardless of nesting depth.
 export function extractProvidesMap(uiSchema: Record<string, unknown>): ProvidesMap {
   const map: ProvidesMap = {}
-  function walk(node: Record<string, unknown>, path: string) {
-    const opts = node['ui:options'] as Record<string, unknown> | undefined
-    if (opts?.provides && typeof opts.provides === 'string' && path) {
+  walkUiSchema(uiSchema, '', (opts, path) => {
+    if (opts.provides && typeof opts.provides === 'string') {
       map[opts.provides] = path
     }
-    for (const key of Object.keys(node)) {
-      if (!key.startsWith('ui:') && node[key] !== null && typeof node[key] === 'object') {
-        walk(node[key] as Record<string, unknown>, path ? `${path}.${key}` : key)
-      }
-    }
-  }
-  walk(uiSchema, '')
+  })
   return map
 }
 
